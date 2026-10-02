@@ -1,0 +1,62 @@
+# Local-only plans, research notes, and private working files.
+.local/
+
+# Secrets and machine-specific environment configuration.
+.env
+.env.*
+!.env.example
+!.env.*.example
+secrets/
+*.pem
+*.key
+
+# Python environments, caches, packaging, and test output.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# JavaScript dependencies and generated frontend output.
+node_modules/
+.vite/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Runtime state, private conversations, vector indexes, and raw reports.
+data/runtime/
+data/raw/
+data/indexes/
+artifacts/local/
+reports/local/
+logs/
+*.log
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Local editor and operating-system files.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Keep manifests, lockfiles, public docs, curated knowledge, synthetic cases,
+# and reviewed showcase artifacts under version control.
