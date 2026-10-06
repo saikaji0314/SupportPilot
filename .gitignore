@@ -1,5 +1,7 @@
 # Local-only plans, research notes, and private working files.
 .local/
+# Private collaboration entry point; product documentation stays public.
+/AGENTS.md
 
 # Secrets and machine-specific environment configuration.
 .env
