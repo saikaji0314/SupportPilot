@@ -41,6 +41,7 @@ data/raw/
 data/indexes/
 artifacts/local/
 reports/local/
+examples/grounded/eval/
 logs/
 *.log
 *.db
