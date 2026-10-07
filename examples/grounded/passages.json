@@ -1,0 +1,32 @@
+[
+  {
+    "id": "faq1556-01",
+    "document_id": "tplink-us-faq1556",
+    "product_ids": ["tp-link-archer-ax55-us-v1"],
+    "source_url": "https://www.tp-link.com/us/support/faq/1556/",
+    "section": "Before You Begin",
+    "scope_note": "通用路由器 FAQ，用于当前产品实验；不是 V1 特定固件的专属菜单说明。",
+    "text": "本文针对已完成初始设置但仍不能上网的路由器。先确认 modem 接在路由器 WAN/Internet 口、计算机接入路由器网络，再在管理页 Advanced > Status 查看 Internet IP。",
+    "content_type": "source_summary"
+  },
+  {
+    "id": "faq1556-02",
+    "document_id": "tplink-us-faq1556",
+    "product_ids": ["tp-link-archer-ax55-us-v1"],
+    "source_url": "https://www.tp-link.com/us/support/faq/1556/",
+    "section": "If the Internet IP Address Shows as 0.0.0.0",
+    "scope_note": "说明该 FAQ 所述 modem 与路由器连接场景，不据此判定硬件损坏。",
+    "text": "在本文场景下，Internet IP 为 0.0.0.0 表示路由器尚未从 modem 获得有效地址。",
+    "content_type": "source_summary"
+  },
+  {
+    "id": "faq1556-03",
+    "document_id": "tplink-us-faq1556",
+    "product_ids": ["tp-link-archer-ax55-us-v1"],
+    "source_url": "https://www.tp-link.com/us/support/faq/1556/",
+    "section": "If the Internet IP Address Shows as 0.0.0.0 / Step 1",
+    "scope_note": "保留章节条件；不是完整 FAQ，也不包含后续配置操作。",
+    "text": "在已完成设置且 Internet IP 为 0.0.0.0 的情形下，核对 modem 到路由器 WAN/Internet 口的网线连接。松动或接错端口可能导致这一状态。",
+    "content_type": "source_summary"
+  }
+]

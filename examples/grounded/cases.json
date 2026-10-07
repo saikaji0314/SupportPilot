@@ -1,0 +1,50 @@
+[
+  {
+    "id": "case-01",
+    "user_text": "我路由器的 Internet IP 显示 0.0.0.0，这代表什么？",
+    "state": {
+      "product_id": "tp-link-archer-ax55-us-v1",
+      "facts": [],
+      "checks": [],
+      "pending": null
+    },
+    "passage_ids": ["faq1556-02"]
+  },
+  {
+    "id": "case-02",
+    "user_text": "家里所有设备都连上 Wi-Fi 但不能上网。路由器已设置好，处于路由模式，上游是 modem，Internet IP 是 0.0.0.0。我还没有检查接线，接下来怎么做？",
+    "state": {
+      "product_id": "tp-link-archer-ax55-us-v1",
+      "facts": [],
+      "checks": [],
+      "pending": null
+    },
+    "passage_ids": ["faq1556-02", "faq1556-03"]
+  },
+  {
+    "id": "case-03",
+    "user_text": "家里所有设备都连上 Wi-Fi 但不能上网。路由器已设置好，处于路由模式，上游是 modem，Internet IP 是 0.0.0.0。我还没有检查接线，接下来怎么做？",
+    "state": {
+      "product_id": "tp-link-archer-ax55-us-v1",
+      "facts": [],
+      "checks": [],
+      "pending": null
+    },
+    "passage_ids": []
+  },
+  {
+    "id": "case-04",
+    "user_text": "接线确认过了，没有松动，端口也对，还是不能上网。",
+    "state": {
+      "product_id": "tp-link-archer-ax55-us-v1",
+      "facts": [
+        {"text": "已完成设置、路由模式，上游为 modem。多台设备连上 Wi-Fi 但不能上网，Internet IP 为 0.0.0.0。", "source_message_id": "u1"}
+      ],
+      "checks": [
+        {"id": "check-1", "text": "核对 modem 到路由器 WAN/Internet 口的连接", "result": "failed", "feedback": "接线无松动，端口正确，仍不能上网。", "source_message_id": "u2", "evidence_ids": ["faq1556-03"]}
+      ],
+      "pending": null
+    },
+    "passage_ids": ["faq1556-02", "faq1556-03"]
+  }
+]
