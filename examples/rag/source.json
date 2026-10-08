@@ -1,0 +1,9 @@
+{
+  "source_path": ".local/research/AX55-US-V1-user-guide.txt",
+  "document_id": "ax55-us-v1-user-guide",
+  "product_id": "tp-link-archer-ax55-us-v1",
+  "source_url": "https://www.tp-link.com/us/document/79681/",
+  "scope_note": "美国站 V1 支持入口的型号手册；页码使用 PDF 页序，未验证所有后续固件界面。",
+  "chunk_size": 1200,
+  "overlap": 200
+}

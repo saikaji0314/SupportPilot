@@ -8,10 +8,10 @@
 
 资料没有人工配置的操作 ID、前提表达式或后继节点。章节条件保留在正文中，由模型阅读。会话里的 `check-1` 是某次已发出的检查记录编号，与资料无关。
 
-预览输入：
+运行给定资料的四例评估（会调用模型）：
 
 ```powershell
-python -m supportpilot.grounded_demo --case case-01
+python -m supportpilot.grounded_demo
 ```
 
-命令只显示输入。`supportpilot.grounded.propose_response` 是待实现接口；完成后可向 `run_case(model, "case-01")` 传入已配置的模型客户端。未通过真实模型评测前，不宣称实验已经成功。
+当前脚本已改为运行四例并调用用户配置的模型，命令行参数尚未接入；使用 `python -m supportpilot.grounded_demo` 执行评估。也可向 `run_case(model, "case-01")` 传入已配置的模型客户端。回复函数已实现，一轮四例行为符合当前目标；这不是 RAG 或多轮记忆的验收。
