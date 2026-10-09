@@ -1,0 +1,39 @@
+[
+  {
+    "id": "feedback-01",
+    "user_text": "检查过了，路由器和猫之间的连接正常，但还是不能上网。",
+    "example_feedback": {"facts": [], "check_result": "passed", "issue_status": "ongoing"},
+    "review": "c1.result=passed，记录本轮原话和来源 u2，pending 清空，status 仍为 ongoing。检查连接正常不等于已恢复。"
+  },
+  {
+    "id": "feedback-02",
+    "user_text": "现在已经能正常上网了。",
+    "example_feedback": {"facts": [], "check_result": "unknown", "issue_status": "resolved"},
+    "review": "status=resolved，pending 清空；没有说做过检查，不能编造 c1 已完成或确定根因。"
+  },
+  {
+    "id": "feedback-03",
+    "user_text": "刚才看错了，Internet IP 实际是 192.168.1.10，不是 0.0.0.0。",
+    "example_feedback": {"facts": [{"text": "Internet IP 为 192.168.1.10", "replaces": ["u1-f1"]}], "check_result": "unknown", "issue_status": "unknown"},
+    "review": "当前 facts 移除 u1-f1，加入 u2-f1 并保留来源 u2；pending 和检查结果不变。旧事实仍可在 before 日志中追溯。"
+  },
+  {
+    "id": "feedback-04",
+    "user_text": "我还没检查，稍等一下。",
+    "example_feedback": {"facts": [], "check_result": "not_done", "issue_status": "unknown"},
+    "review": "c1.result=not_done，记录原话和来源 u2；pending 仍为 c1，不能标记 failed 或跳到另一个检查。"
+  },
+  {
+    "id": "feedback-05",
+    "user_text": "还是不行。",
+    "example_feedback": {"facts": [], "check_result": "unknown", "issue_status": "ongoing"},
+    "review": "只知道问题仍在；没有明确说是否检查了物理连接，保留 pending，下次应澄清检查结果。"
+  },
+  {
+    "id": "feedback-06",
+    "user_text": "检查完了，还是不行。",
+    "without_pending": true,
+    "example_feedback": {"facts": [], "check_result": "unknown", "issue_status": "ongoing"},
+    "review": "没有待确认检查，不应把反馈挂到虚构或任意一条历史检查。保持 checks 为空。"
+  }
+]
