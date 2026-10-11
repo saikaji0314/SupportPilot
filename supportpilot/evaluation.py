@@ -10,8 +10,30 @@ RUBRIC = [
 ]
 
 
+class RequiredCondition(BaseModel):
+    condition: str = Field(min_length=1, description="资料说明的操作必要条件")
+    source_refs: list[str] = Field(min_length=1, description="支持该条件的资料位置")
+
+
+class ConfirmedFact(BaseModel):
+    fact: str = Field(min_length=1, description="用户当前已确认的事实，不含资料默认值或助手推测")
+    source_refs: list[str] = Field(min_length=1, description="本轮用户反馈或 state.facts 的位置")
+
+
+class PreconditionsAudit(BaseModel):
+    required_conditions: list[RequiredCondition]
+    confirmed_facts: list[ConfirmedFact]
+    missing_conditions: list[str] = Field(description="尚未被用户当前事实确认的必要条件；已确认则为空")
+    candidate_behavior: Literal["direct_action", "clarify", "no_conditional_action"] = Field(
+        description="直接要求执行条件性操作、先询问条件、或没有条件性操作/判断"
+    )
+
+
 class ReviewItem(BaseModel):
     criterion_id: str
+    audit: PreconditionsAudit | None = Field(
+        default=None, description="preconditions 必须填写，先列条件/当前事实/缺项再给结论；其他项填 null"
+    )
     verdict: Literal["pass", "fail", "unclear", "not_applicable"]
     reason: str = Field(min_length=1)
     support_refs: list[str] = Field(default_factory=list)
@@ -71,7 +93,25 @@ def evaluate_response(model, *, payload: dict, response: dict,
 - not_applicable：本轮没有本项要评价的行为，不是材料不足，也不代表通过。
 同一项有多处行为时，只要有一处明确违规就判 fail；没有违规但关键处无法判断才用 unclear。
 
-四、输出要求
+四、前提证据 audit（先列依据，再给该项 verdict）
+preconditions 必须填写 audit，其他项填 null。仅列可核对的短句：
+- 先在 audit 的列表中实际填写条件、事实与缺项，再据此写 reason 和 verdict。
+  不能只在 reason 说明缺前提，却把 audit 全部列表留空。
+- required_conditions：从 passages 列出所要求操作的必要条件与资料位置。
+- confirmed_facts：仅列 user_text 或 state.facts 已确认的相关当前事实及其位置。
+  不把资料默认值、候选说的“可能”或历史助手推测列为 confirmed_facts。
+- missing_conditions：逐个核对 required_conditions，列尚未由当前事实确认的条件。
+  已知比较的一方不能代替另一方；如资料未完整说明条件，在 reason 标明无法判断。
+- candidate_behavior：回复直接要求执行条件性操作用 direct_action；
+  只先询问必要条件而不同时要求执行用 clarify；无条件性操作或判断用 no_conditional_action。
+  “可能有问题，建议现在修改”仍是 direct_action。
+无条件性操作时 audit 的三个列表可以为空，不得省略 audit。
+candidate_behavior 为 direct_action 时，required_conditions 必须非空；
+若没有已确认的相关事实，confirmed_facts 可以为空，但缺失的必要条件必须列入 missing_conditions。
+必要条件未确认且 direct_action 应判 fail；缺条件但先询问可以 pass；
+要求执行且条件都已确认才可以判前提成立。audit 与 verdict 必须一致。
+
+五、输出要求
 reason 用中文一两句话，指出候选回复的具体说法，并说明证据如何支持或不支持它。
 preconditions 的 reason 应点明所需条件及确认它的用户事实，或明确指出缺少哪项事实；
 文档默认值不属于确认用户现状的事实来源。
@@ -100,3 +140,19 @@ def validate_review(review, rubric: list[dict]) -> ResponseReview:
     if len(ids) != len(expected) or set(ids) != set(expected):
         raise ValueError("评审必须恰好覆盖每个 criterion_id 一次")
     return review
+
+
+def review_consistency_errors(review: ResponseReview) -> list[str]:
+    """只检查裁判显式输出的矛盾/缺项，不保证条件和事实抽取正确。"""
+    errors = []
+    for item in review.items:
+        if item.criterion_id != "preconditions":
+            continue
+        if item.audit is None:
+            errors.append("preconditions 缺少 audit，前提评审无法核对")
+        elif item.audit.candidate_behavior == "direct_action":
+            if not item.audit.required_conditions:
+                errors.append("前提审计不完整：直接要求条件性操作，却未列出 required_conditions")
+            if item.audit.missing_conditions and item.verdict == "pass":
+                errors.append("评审自相矛盾：存在未确认的必要条件且直接要求操作，却判为 pass")
+    return errors

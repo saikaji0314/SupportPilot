@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-from supportpilot.evaluation import RUBRIC, evaluate_response, validate_review
+from supportpilot.evaluation import RUBRIC, evaluate_response, validate_review, review_consistency_errors
 from supportpilot.trajectory import load_trace, render_trace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +26,8 @@ def inspect_rules(trace: dict) -> dict:
 
 
 def run_review(trace: dict, *, model=None, evaluator=evaluate_response) -> dict:
-    result = {"rules": inspect_rules(trace), "judge_status": "not_run", "review": None}
+    result = {"rules": inspect_rules(trace), "judge_status": "not_run", "review": None,
+              "review_errors": None}
     if model is None:
         return result
     if not trace["reviewable"]:
@@ -35,8 +36,12 @@ def run_review(trace: dict, *, model=None, evaluator=evaluate_response) -> dict:
     try:
         review = validate_review(evaluator(model, payload=trace["payload"],
                                           response=trace["response"], rubric=RUBRIC), RUBRIC)
-        result.update(judge_status="completed", review=review.model_dump(),
-                      verdict_counts=dict(Counter(i.verdict for i in review.items)))
+        errors = review_consistency_errors(review)
+        result.update(judge_status="invalid_review" if errors else "completed",
+                      review=review.model_dump(), review_errors=errors)
+        # 保留裁判原结论；矛盾输出不参与通过/失败统计，也不改写成 fail。
+        if not errors:
+            result["verdict_counts"] = dict(Counter(i.verdict for i in review.items))
     except Exception as exc:
         result.update(judge_status="error", error_type=type(exc).__name__)
     return result
@@ -53,7 +58,7 @@ def main():
         parser.exit(2, f"无法加载记录：{type(exc).__name__}\n")
     folder = ROOT / ".local/evaluation" / uuid4().hex[:12]
     folder.mkdir(parents=True)
-    result = {"schema_version": 1, "trace": trace, "rubric": RUBRIC,
+    result = {"schema_version": 2, "trace": trace, "rubric": RUBRIC,
               "mode": "judge" if args.judge else "inspect",
               "evaluator_code_sha256": sha256((ROOT / "supportpilot/evaluation.py").read_bytes()).hexdigest(),
               "evaluation": {"judge_status": "running" if args.judge else "not_run"}}
@@ -80,6 +85,8 @@ def main():
     print(json.dumps(result["evaluation"], ensure_ascii=False, indent=2))
     if result["evaluation"]["judge_status"] == "error":
         parser.exit(1, "评审未完成；若为 NotImplementedError，请先实现 evaluate_response。\n")
+    if result["evaluation"]["judge_status"] == "invalid_review":
+        parser.exit(1, "评审缺少证据审计或自相矛盾；原输出已保留，不参与成绩统计。\n")
 
 
 if __name__ == "__main__":
