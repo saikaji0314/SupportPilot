@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SupportPilot · 产品支持</title><link rel="stylesheet" href="/static/style.css"><script defer src="/static/app.js"></script></head>
+<body>
+<header><a class="brand" href="/" aria-label="SupportPilot 首页"><span class="logo">S</span>SupportPilot<span class="brand-note">产品支持</span></a><span class="prototype">本地演示</span></header>
+<main>
+<aside>
+ <div class="eyebrow">SUPPORT CENTER</div><h1>让问题，<br>一步步清晰。</h1><p class="intro">基于产品手册，了解你的设备，找到有依据的下一步。</p>
+ <section class="product"><span class="eyebrow">当前设备</span><div class="router" aria-hidden="true"><i></i><i></i><i></i><i></i><div class="router-body"><b></b><b></b><b></b></div></div><h2>Archer AX55</h2><p>TP-Link · 美国地区 · V1</p><a id="manual" target="_blank" rel="noopener noreferrer">查看官方手册 ↗</a></section>
+ <div class="guide"><strong>从描述现象开始</strong><p>告诉我看到了什么、已经尝试过什么。每次确认一个步骤，再决定下一步。</p></div>
+ <p class="local-note">本原型仅接入上述产品。服务重启后，会话会重置。</p>
+</aside>
+<section class="workspace" aria-label="客服对话">
+ <div class="chat-header"><div><span class="online-dot"></span><strong>售后助手</strong><span id="state-label">准备就绪</span></div><button id="new-chat" class="secondary">＋ 新会话</button></div>
+ <div id="messages" class="messages" role="log" aria-label="对话记录" aria-live="polite">
+  <div id="welcome" class="welcome"><div class="welcome-icon">✦</div><h2>你好，需要什么帮助？</h2><p>可以询问产品用法，也可以一起排查设备问题。<br>涉及产品的回答会附上参考资料。</p><div class="suggestions"><button data-question="已经连上路由器网络，如何打开管理页面登录？"><span>使用咨询</span>如何登录管理页面？ <b>↗</b></button><button data-question="已完成初始设置，路由模式，连接 Wi-Fi 但不能上网，下一步能检查什么？"><span>连接排障</span>Wi-Fi 已连接，但不能上网 <b>↗</b></button></div></div>
+ </div>
+ <div id="busy" class="busy" hidden role="status">正在查阅资料并整理回复，请稍候……</div>
+ <div id="error" class="error" hidden role="alert"><span id="error-text"></span><button id="retry">重试本条消息</button></div>
+ <div id="ended" class="ended" hidden></div>
+ <form id="composer"><label class="sr-only" for="message">描述问题或反馈检查结果</label><textarea id="message" maxlength="2000" rows="2" placeholder="描述你的问题，或反馈刚才的检查结果……"></textarea><div class="composer-bottom"><span>Enter 发送 · Shift + Enter 换行</span><button id="send" type="submit">发送 <span>↑</span></button></div></form>
+ <p class="footnote">请勿发送密码等敏感信息。助手建议需结合设备实际情况确认。</p>
+</section>
+</main><footer>SupportPilot <span>有来源的回答 · 有记录的排查</span></footer>
+</body></html>
