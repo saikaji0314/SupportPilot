@@ -40,7 +40,7 @@ def main():
             record = run_turn_graph(bailian(), user_text=source["user_text"],
                 state=source["before"], retrieve=make_retriever(), on_progress=progress)
         else:
-            graph = build_turn_graph(None, on_progress=progress,
+            graph = build_turn_graph(None, on_progress=progress, enable_repair=False,
                 retrieve=lambda query, product_id: deepcopy(source["passages"]),
                 feedback_fn=lambda *a, **kw: Feedback.model_validate(source["feedback"]),
                 response_fn=lambda *a, **kw: GroundedResponse.model_validate(source["response"]))

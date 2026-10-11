@@ -20,7 +20,8 @@ class ChatGraphTests(unittest.TestCase):
                 queries.append((query, product_id))
                 return deepcopy(passages)
             with patch(target + ".extract_feedback", return_value=feedback), patch(target + ".propose_response", return_value=reply):
-                outputs.append(runner(None, user_text="合成反馈", state=state, retrieve=retrieve,
+                options = {"enable_repair": False} if runner is run_turn_graph else {}
+                outputs.append(runner(None, user_text="合成反馈", state=state, retrieve=retrieve, **options,
                     on_progress=lambda stage, data: stages.append((stage, deepcopy(data)))))
             events.append(stages)
             calls.append(queries)
@@ -65,6 +66,44 @@ class ChatGraphTests(unittest.TestCase):
         self.assertEqual(b["after"]["product_id"], "b")
         self.assertEqual(len(b["after"]["messages"]), 2)
         self.assertEqual(a["after"]["messages"][0]["text"], "A")
+
+    def test_repair_success_or_rejection_is_bounded(self):
+        bad = GroundedResponse(kind="recommend_check", text="检查", evidence_ids=["missing"])
+        good = GroundedResponse(kind="recommend_check", text="检查", evidence_ids=["p1"])
+        for corrected, accepted in [(good, True), (bad, False)]:
+            with self.subTest(accepted=accepted):
+                state = new_state("demo")
+                events, calls = [], []
+                def repair(model, **data):
+                    calls.append(deepcopy(data))
+                    data["state"]["facts"].clear()
+                    return corrected
+                graph = build_turn_graph(None,
+                    retrieve=lambda *a, **kw: [{"id": "p1", "product_ids": ["demo"]}],
+                    feedback_fn=lambda *a, **kw: Feedback(facts=[{"text": "新增事实"}]),
+                    response_fn=lambda *a, **kw: bad, repair_fn=repair,
+                    on_progress=lambda stage, data: events.append(stage))
+                record = graph.invoke({"before": state, "user_text": "问题"})["record"]
+                self.assertEqual(record["accepted"], accepted)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(events.count("retrieve"), 1)
+                self.assertEqual(events.count("merge_feedback"), 1)
+                self.assertEqual(events[-3:], ["finish_turn", "repair_response", "finish_turn"])
+                self.assertEqual(record["repair_attempts"][0]["rejected_response"], bad.model_dump())
+                self.assertEqual(state, new_state("demo"))
+                if accepted:
+                    self.assertEqual(len(record["after"]["messages"]), 2)
+                    self.assertEqual(len(record["after"]["checks"]), 1)
+                    self.assertEqual(len(record["after"]["facts"]), 1)
+                else:
+                    self.assertEqual(record["after"], state)
+
+    def test_valid_reply_never_calls_repair(self):
+        graph = build_turn_graph(None, retrieve=lambda *a, **kw: [],
+            feedback_fn=lambda *a, **kw: Feedback(),
+            response_fn=lambda *a, **kw: GroundedResponse(kind="ask_user", text="具体情况？"),
+            repair_fn=lambda *a, **kw: self.fail("不应修正"))
+        self.assertTrue(graph.invoke({"before": new_state("demo"), "user_text": "问题"})["record"]["accepted"])
 
 
 if __name__ == "__main__":

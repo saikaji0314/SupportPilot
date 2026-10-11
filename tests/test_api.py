@@ -135,6 +135,39 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(retried.status_code, 200)
         self.assertEqual(len(app.state.sessions[identifier].state['messages']), 2)
 
+    def test_graph_repair_commit_rejection_and_timeout(self):
+        bad = GroundedResponse(kind='answer', text='无效引用', evidence_ids=['missing'])
+        good = GroundedResponse(kind='recommend_check', text='合成检查', evidence_ids=['p1'])
+        for outcome, expected in [(good, 200), (bad, 502), (TimeoutError('private'), 504)]:
+            with self.subTest(status=expected):
+                runtime = Runtime()
+                runtime.resources = (object(), lambda query, product_id: [{
+                    'id': 'p1', 'text': '合成检查', 'product_ids': [product_id],
+                    'source_url': 'https://example.test/manual'}])
+                app = create_app(turn_runner=runtime)
+                client = TestClient(app)
+                identifier = client.post('/sessions').json()['session_id']
+                before = deepcopy(app.state.sessions[identifier].state)
+                kwargs = {'side_effect': outcome} if isinstance(outcome, Exception) else {'return_value': outcome}
+                with patch('supportpilot.chat_graph.extract_feedback', return_value=Feedback()), \
+                     patch('supportpilot.chat_graph.propose_response', return_value=bad), \
+                     patch('supportpilot.chat_graph.repair_response', **kwargs) as repair:
+                    response = client.post(f'/sessions/{identifier}/messages', json={'text': '问题'})
+                self.assertEqual(response.status_code, expected)
+                self.assertEqual(repair.call_count, 1)
+                session = app.state.sessions[identifier]
+                self.assertFalse(session.lock.locked())
+                if expected == 200:
+                    self.assertEqual(len(session.state['messages']), 2)
+                    self.assertEqual(len(session.state['checks']), 1)
+                    self.assertEqual(response.json()['response'], good.model_dump())
+                else:
+                    self.assertEqual(session.state, before)
+                saved = __import__('json').loads(self.write.call_args.args[0])
+                self.assertEqual(len(saved['repair_attempts']), 1)
+                if expected == 504:
+                    self.assertEqual(saved['stage'], 'repair_response')
+
 
 if __name__ == '__main__':
     unittest.main()
