@@ -22,3 +22,5 @@ python -m uvicorn supportpilot.api:app --host 127.0.0.1 --port 8000
 接口测试：python -m unittest discover -s tests -p test_api.py 。这些测试使用模拟核心，不调用外部模型。
 
 网页消息经 api.Runtime → run_turn_graph → LangGraph 主链路及最多一次候选修正处理，复用既有业务函数。会话仍由 API 管理，图未启用 checkpoint。更新服务端代码后需要重启 Uvicorn；浏览器刷新不会重载 Python 进程。
+
+网页支持在 Archer AX55 US V1 和 RE315 US V1 之间选择。切换产品会新建会话，历史不迁移。启动前按 examples/rag/GENERALIZATION.md 准备并入库混合语料，Runtime 读取 .local/corpus/chunks.json；缺少完整索引时发送消息会失败。GET /products 返回产品清单，POST /sessions 接收可选 product_id，省略时默认 AX55。产品由服务端绑定到会话，来源标题随所选产品显示。

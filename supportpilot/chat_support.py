@@ -65,16 +65,19 @@ def finish_turn(*, before: dict, updated: dict, user_text: str, feedback,
             "response": reply.model_dump(), "errors": errors, "after": after}
 
 
-def make_retriever():
+def make_retriever(chunks_path=None):
     """显式开始聊天时创建一次客户端，复用已有索引；不入库。"""
     from supportpilot.rag_support import OUTPUT_DIR, make_embedder, open_collection
     from supportpilot.retrieval import retrieve_passages
 
-    chunks = json.loads((OUTPUT_DIR / "chunks.json").read_text(encoding="utf-8"))
+    from pathlib import Path
+    chunks = json.loads((Path(chunks_path) if chunks_path else OUTPUT_DIR / "chunks.json").read_text(encoding="utf-8"))
     embedder = make_embedder()
     collection = open_collection(chunks, embedder)
     if not collection.count():
         raise ValueError("当前集合为空，请先使用 rag_demo --index 入库")
+    if chunks_path is not None and collection.count() != len(chunks):
+        raise ValueError("多文档集合尚未完整入库，请重新运行 corpus_demo --index")
 
     def retrieve(query: str, product_id: str):
         passages = retrieve_passages(collection, embedder, query, product_id)

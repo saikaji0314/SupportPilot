@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 let sessionId = null, busy = false, closed = false, failedText = null;
+let products = [], activeProduct = null;
 const welcome = $('welcome').cloneNode(true);
 const kindNames = {answer:'产品解答',ask_user:'需要确认',recommend_check:'下一项检查',resolved:'问题已恢复',handoff:'建议人工协助'};
 
@@ -17,6 +18,7 @@ function setBusy(value) {
   $('message').disabled = value || closed;
   $('new-chat').disabled = value;
   $('retry').disabled = value;
+  $('product-select').disabled = value || !products.length;
   $('state-label').textContent = value ? '处理中' : closed ? '本次会话已结束' : '准备就绪';
 }
 function showError(error) {
@@ -67,11 +69,25 @@ function addSummary(wrapper, summary) {
 async function startSession() {
   setBusy(true); failedText = null; $('error').hidden = true;
   try {
-    const data = await request('/sessions', {});
+    const selected = products.find(p => p.product_id === $('product-select').value);
+    const data = await request('/sessions', {product_id: selected.product_id});
     sessionId = data.session_id; closed = false;
-    $('messages').replaceChildren(welcome.cloneNode(true));
+    activeProduct = selected;
+    $('product-name').textContent = selected.name;
+    $('product-variant').textContent = selected.variant;
+    $('manual').href = selected.source_url;
+    $('device-art').hidden = selected.name !== 'Archer AX55';
+    const intro = welcome.cloneNode(true);
+    intro.querySelectorAll('[data-question]').forEach((button, i) => {
+      button.dataset.question = selected.questions[i];
+      button.textContent = selected.questions[i];
+    });
+    $('messages').replaceChildren(intro);
     $('message').value = ''; $('ended').hidden = true;
-  } catch(error) { showError(error); }
+  } catch(error) {
+    if (activeProduct) $('product-select').value = activeProduct.product_id;
+    showError(error);
+  }
   finally { setBusy(false); }
 }
 async function send(text, retry = false) {
@@ -95,6 +111,15 @@ $('composer').addEventListener('submit', e => {e.preventDefault(); send($('messa
 $('message').addEventListener('keydown', e => {if(e.key === 'Enter' && !e.shiftKey && !e.isComposing){e.preventDefault(); $('composer').requestSubmit();}});
 $('messages').addEventListener('click', e => {const button = e.target.closest('[data-question]'); if(button && !busy){$('message').value = button.dataset.question; $('message').focus();}});
 $('new-chat').addEventListener('click', startSession);
+$('product-select').addEventListener('change', startSession);
 $('retry').addEventListener('click', () => {if(failedText) send(failedText, true);});
 setBusy(true);
-request('/health').then(data => {$('manual').href = data.source_url; return startSession();}).catch(error => {showError(error); setBusy(false);});
+request('/products').then(data => {
+  products = data;
+  $('product-select').replaceChildren(...products.map(p => {
+    const option = element('option', `${p.name} · US V1`);
+    option.value = p.product_id;
+    return option;
+  }));
+  return startSession();
+}).catch(error => {showError(error); setBusy(false);});

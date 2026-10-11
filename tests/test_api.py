@@ -90,6 +90,28 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(client.get('/static/app.js').status_code,200)
         self.assertTrue(client.get('/health').json()['ok'])
 
+    def test_product_selection_binds_new_session_and_rejects_unknown(self):
+        products = self.client.get('/products').json()
+        self.assertEqual(len(products), 2)
+        selected = products[1]['product_id']
+        identifier = self.client.post('/sessions', json={'product_id': selected}).json()['session_id']
+        self.assertEqual(self.app.state.sessions[identifier].state['product_id'], selected)
+        reply = self.client.post(f'/sessions/{identifier}/messages', json={'text': '问题'})
+        self.assertEqual(reply.json()['sources'][0]['title'], 'RE315 用户手册')
+        self.assertEqual(self.client.post('/sessions', json={'product_id': 'unknown'}).status_code, 422)
+        default = self.session()
+        self.assertNotEqual(self.app.state.sessions[default].state['product_id'], selected)
+
+    def test_runtime_loads_shared_corpus(self):
+        runtime = Runtime()
+        with patch('supportpilot.bailian.bailian', return_value=object()), \
+             patch('supportpilot.api.make_retriever', return_value=object()) as retrieve, \
+             patch('supportpilot.api.run_turn_graph', return_value={}) as graph:
+            runtime(user_text='问题', state={'product_id': 'tp-link-re315-us-v1'})
+        self.assertEqual(retrieve.call_args.args[0].name, 'chunks.json')
+        self.assertEqual(retrieve.call_args.args[0].parent.name, 'corpus')
+        self.assertEqual(graph.call_args.kwargs['state']['product_id'], 'tp-link-re315-us-v1')
+
     def test_runtime_uses_real_graph_across_two_http_turns(self):
         runtime = Runtime()
         runtime.resources = (object(), lambda query, product_id: [{

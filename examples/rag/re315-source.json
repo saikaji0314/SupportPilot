@@ -1,0 +1,10 @@
+{
+  "source_path": ".local/research/RE315-US-V1-user-guide.pdf",
+  "document_id": "re315-us-v1-user-guide",
+  "product_id": "tp-link-re315-us-v1",
+  "source_url": "https://www.tp-link.com/us/document/76068/",
+  "support_url": "https://www.tp-link.com/us/support/download/re315/v1/?app=t",
+  "scope_note": "美国站 RE315 V1 支持入口提供的 RE315/RE215 共用手册；本次只登记 RE315 US V1，不自动扩展到其他型号或固件。页码为 PDF 页序。",
+  "chunk_size": 1200,
+  "overlap": 200
+}

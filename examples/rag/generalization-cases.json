@@ -1,0 +1,7 @@
+[
+  {"id":"ax55-login", "product_id":"tp-link-archer-ax55-us-v1", "text":"已经连接设备网络，如何打开管理页面登录？"},
+  {"id":"re315-login", "product_id":"tp-link-re315-us-v1", "text":"已经连接设备网络，如何打开管理页面登录？"},
+  {"id":"re315-signal", "product_id":"tp-link-re315-us-v1", "text":"RE315 的信号指示灯常亮红色是什么意思？"},
+  {"id":"re315-check", "product_id":"tp-link-re315-us-v1", "text":"RE315 已完成设置，扩展器的信号灯常亮红色，连接扩展网络时信号不好，下一步能检查什么？"},
+  {"id":"unknown-product", "product_id":"not-in-index", "text":"如何打开管理页面登录？"}
+]

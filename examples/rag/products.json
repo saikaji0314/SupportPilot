@@ -1,0 +1,4 @@
+[
+  {"product_id":"tp-link-archer-ax55-us-v1","name":"Archer AX55","variant":"TP-Link · 美国地区 · V1","source_url":"https://www.tp-link.com/us/document/79681/","questions":["已经连上路由器网络，如何打开管理页面登录？","已完成初始设置，路由模式，连接 Wi-Fi 但不能上网，下一步能检查什么？"]},
+  {"product_id":"tp-link-re315-us-v1","name":"RE315","variant":"TP-Link · 美国地区 · V1","source_url":"https://www.tp-link.com/us/document/76068/","questions":["已经连接扩展器网络，如何打开管理页面登录？","RE315 已完成设置，扩展器的信号灯常亮红色，连接扩展网络时信号不好，下一步能检查什么？"]}
+]

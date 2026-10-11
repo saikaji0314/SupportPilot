@@ -22,6 +22,10 @@ class MessageInput(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 
 
+class SessionInput(BaseModel):
+    product_id: str | None = None
+
+
 @dataclass
 class Session:
     state: dict
@@ -40,7 +44,7 @@ class Runtime:
         with self.lock:
             if self.resources is None:
                 from supportpilot.bailian import bailian
-                self.resources = (bailian(), make_retriever())
+                self.resources = (bailian(), make_retriever(ROOT / ".local/corpus/chunks.json"))
         model, retrieve = self.resources
         return run_turn_graph(model, retrieve=retrieve, **kwargs)
 
@@ -48,6 +52,8 @@ class Runtime:
 def create_app(turn_runner=None, log_dir=None):
     app = FastAPI(title="SupportPilot", docs_url="/docs")
     config = json.loads((ROOT / "examples/rag/source.json").read_text(encoding="utf-8"))
+    products = json.loads((ROOT / "examples/rag/products.json").read_text(encoding="utf-8"))
+    by_product = {p["product_id"]: p for p in products}
     sessions = {}
     sessions_lock = Lock()
     runner = turn_runner or Runtime()
@@ -65,13 +71,20 @@ def create_app(turn_runner=None, log_dir=None):
                 "product_id": config["product_id"], "source_url": config["source_url"]}
 
     @app.post("/sessions", status_code=201)
-    def create_session():
+    def create_session(body: SessionInput | None = None):
+        product_id = body.product_id if body and body.product_id is not None else config["product_id"]
+        if product_id not in by_product:
+            raise HTTPException(422, "请选择已接入的产品。")
         with sessions_lock:
             if len(sessions) >= 200:
                 raise HTTPException(503, "本地演示会话已满，请重启服务。")
             identifier = uuid4().hex
-            sessions[identifier] = Session(new_state(config["product_id"]))
-        return {"session_id": identifier}
+            sessions[identifier] = Session(new_state(product_id))
+        return {"session_id": identifier, "product_id": product_id}
+
+    @app.get("/products")
+    def list_products():
+        return products
 
     @app.post("/sessions/{session_id}/messages")
     def send_message(session_id: str, body: MessageInput):
@@ -119,7 +132,8 @@ def create_app(turn_runner=None, log_dir=None):
             reply = record["response"]
             session.closed = reply["kind"] in ("resolved", "handoff")
             cited = set(reply["evidence_ids"])
-            sources = [{"id": p["id"], "title": "Archer AX55 用户手册",
+            product = by_product[session.state["product_id"]]
+            sources = [{"id": p["id"], "title": product["name"] + " 用户手册",
                         "page": p.get("page"), "url": p["source_url"], "text": p["text"]}
                        for p in record["passages"] if p["id"] in cited]
             summary = None

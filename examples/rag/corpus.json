@@ -1,0 +1,3 @@
+{
+  "sources": ["examples/rag/source.json", "examples/rag/re315-source.json"]
+}
