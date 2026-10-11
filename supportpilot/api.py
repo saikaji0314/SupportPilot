@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from supportpilot.chat import run_turn
+from supportpilot.chat_graph import run_turn_graph
 from supportpilot.chat_support import make_retriever, new_state
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,7 +42,7 @@ class Runtime:
                 from supportpilot.bailian import bailian
                 self.resources = (bailian(), make_retriever())
         model, retrieve = self.resources
-        return run_turn(model, retrieve=retrieve, **kwargs)
+        return run_turn_graph(model, retrieve=retrieve, **kwargs)
 
 
 def create_app(turn_runner=None, log_dir=None):

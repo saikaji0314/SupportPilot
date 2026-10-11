@@ -5,7 +5,10 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from supportpilot.api import create_app
+from supportpilot.api import Runtime, create_app
+from supportpilot.chat_graph import run_turn_graph
+from supportpilot.conversation import Feedback
+from supportpilot.grounded import GroundedResponse
 
 
 def fake_turn(*, user_text, state, on_progress):
@@ -86,6 +89,51 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(client.get('/').status_code,200)
         self.assertEqual(client.get('/static/app.js').status_code,200)
         self.assertTrue(client.get('/health').json()['ok'])
+
+    def test_runtime_uses_real_graph_across_two_http_turns(self):
+        runtime = Runtime()
+        runtime.resources = (object(), lambda query, product_id: [{
+            "id": "p1", "text": "合成检查", "product_ids": [product_id],
+            "page": 2, "source_url": "https://example.test/manual"}])
+        app = create_app(turn_runner=runtime)
+        client = TestClient(app)
+        identifier = client.post('/sessions').json()['session_id']
+        path = f'/sessions/{identifier}/messages'
+        with patch('supportpilot.api.run_turn_graph', wraps=run_turn_graph) as graph_call, \
+             patch('supportpilot.chat_graph.extract_feedback', side_effect=[Feedback(), Feedback(issue_status='resolved')]), \
+             patch('supportpilot.chat_graph.propose_response', side_effect=[
+                 GroundedResponse(kind='recommend_check', text='合成检查', evidence_ids=['p1']),
+                 GroundedResponse(kind='resolved', text='已恢复')]):
+            first = client.post(path, json={'text': '无法上网'})
+            self.assertEqual(first.status_code, 200)
+            self.assertEqual(first.json()['sources'][0]['id'], 'p1')
+            second = client.post(path, json={'text': '已经恢复'})
+            self.assertEqual(second.status_code, 200)
+            self.assertTrue(second.json()['closed'])
+            self.assertEqual(second.json()['status'], 'resolved')
+            self.assertEqual(graph_call.call_count, 2)
+        self.assertEqual(len(app.state.sessions[identifier].state['messages']), 4)
+        self.assertIsNone(app.state.sessions[identifier].state['pending'])
+
+    def test_graph_timeout_keeps_session_and_allows_retry(self):
+        runtime = Runtime()
+        runtime.resources = (object(), lambda query, product_id: [])
+        app = create_app(turn_runner=runtime)
+        client = TestClient(app)
+        identifier = client.post('/sessions').json()['session_id']
+        before = deepcopy(app.state.sessions[identifier].state)
+        path = f'/sessions/{identifier}/messages'
+        with patch('supportpilot.chat_graph.extract_feedback', return_value=Feedback(facts=[{'text': '未提交事实'}])), \
+             patch('supportpilot.chat_graph.propose_response', side_effect=TimeoutError('private provider')):
+            failed = client.post(path, json={'text': '问题'})
+        self.assertEqual(failed.status_code, 504)
+        self.assertEqual(app.state.sessions[identifier].state, before)
+        self.assertNotIn('private provider', failed.text)
+        with patch('supportpilot.chat_graph.extract_feedback', return_value=Feedback()), \
+             patch('supportpilot.chat_graph.propose_response', return_value=GroundedResponse(kind='handoff', text='缺资料')):
+            retried = client.post(path, json={'text': '问题'})
+        self.assertEqual(retried.status_code, 200)
+        self.assertEqual(len(app.state.sessions[identifier].state['messages']), 2)
 
 
 if __name__ == '__main__':

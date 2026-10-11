@@ -1,6 +1,6 @@
 # LangGraph 单轮入口
 
-supportpilot/chat_graph.py 用六个节点复用既有提取、合并、查询、检索、回复和校验函数，提供兼容 run_turn 的 run_turn_graph。当前是独立入口，网页/API 尚未切换。
+supportpilot/chat_graph.py 用六个节点复用既有提取、合并、查询、检索、回复和校验函数，提供兼容 run_turn 的 run_turn_graph。网页/API 已通过 Runtime 调用 run_turn_graph；graph_demo 仍可独立运行。
 
 需要已可运行原聊天功能的 Python 环境及 langgraph；基础接线已在 LangGraph 1.2.12 验证。
 
