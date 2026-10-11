@@ -1,0 +1,28 @@
+{
+  "status": "completed",
+  "input": {
+    "user_text": "检查做完了，还是不行。",
+    "state": {
+      "product_id": "synthetic-demo",
+      "facts": [],
+      "checks": [
+        {
+          "id": "c1",
+          "text": "检查连接线是否插紧",
+          "result": "failed",
+          "feedback": "已经检查，仍未恢复"
+        }
+      ],
+      "pending": null,
+      "status": "ongoing",
+      "messages": []
+    },
+    "passages": []
+  },
+  "response": {
+    "kind": "handoff",
+    "text": "当前提供的资料不足以支持进一步排查，建议联系人工支持。",
+    "evidence_ids": []
+  },
+  "fixture_kind": "synthetic"
+}
