@@ -79,6 +79,12 @@ def make_retriever(chunks_path=None):
     if chunks_path is not None and collection.count() != len(chunks):
         raise ValueError("多文档集合尚未完整入库，请重新运行 corpus_demo --index")
 
+    return retriever_for_collection(collection, embedder, chunks)
+
+
+def retriever_for_collection(collection, embedder, chunks):
+    from supportpilot.retrieval import retrieve_passages
+
     def retrieve(query: str, product_id: str):
         passages = retrieve_passages(collection, embedder, query, product_id)
         return with_preceding_context(passages, chunks, product_id)

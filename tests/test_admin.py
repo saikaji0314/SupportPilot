@@ -64,9 +64,9 @@ class AdminTests(unittest.TestCase):
 
     def test_inventory_errors_pagination_and_revocation(self):
         self.register(self.client, 'reviewer')
-        with patch('supportpilot.admin.document_inventory', return_value={'documents':[], 'index_status':'未检查'}):
+        with patch.object(self.app.state.admin_workspace, 'inventory', return_value={'documents':[], 'index_status':'未检查'}):
             self.assertEqual(self.client.get('/admin/api/documents').status_code, 200)
-        with patch('supportpilot.admin.document_inventory', side_effect=OSError('private path')):
+        with patch.object(self.app.state.admin_workspace, 'inventory', side_effect=OSError('private path')):
             result = self.client.get('/admin/api/documents')
             self.assertEqual(result.status_code, 503)
             self.assertNotIn('private path', result.text)

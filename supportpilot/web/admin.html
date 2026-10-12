@@ -5,6 +5,19 @@
 <div id="admin-error" class="admin-panel" role="alert" hidden></div>
 <div id="admin-content" hidden>
 <section class="admin-panel"><h2>产品资料</h2><p id="index-note"></p><div id="documents" class="document-grid"></div></section>
+<section class="admin-panel"><h2>导入产品 PDF</h2><p>填写资料所属产品与适用范围。上传后先预览切块，确认后再请求嵌入并发布；最大 20 MB、500 页，支持可提取文字的 PDF。</p>
+<form id="import-form" class="admin-form"><div class="form-grid">
+<label>产品 ID<input id="import-product" required pattern="[a-z0-9][a-z0-9-]{1,79}" placeholder="例如 tp-link-re315-us-v1" maxlength="80" list="known-products"></label><datalist id="known-products"></datalist>
+<label>文档 ID<input id="import-document" required pattern="[a-z0-9][a-z0-9-]{1,79}" placeholder="同 ID 发布会替换旧文档" maxlength="80"></label>
+<label>产品名称<input id="import-name" required maxlength="80" placeholder="例如 RE315"></label><label>地区 / 硬件版本<input id="import-variant" required maxlength="120" placeholder="例如 TP-Link · 美国地区 · V1"></label>
+<label class="wide">官方资料链接<input id="import-url" type="url" required maxlength="500" placeholder="https://…"></label><label class="wide">适用范围<input id="import-scope" required maxlength="600" placeholder="说明产品型号、地区、硬件版本及资料限制"></label>
+<label>片段长度<input id="import-size" type="number" min="300" max="3000" value="1200" required></label><label>重叠长度<input id="import-overlap" type="number" min="0" max="1000" value="200" required></label>
+<label class="wide">文本型 PDF<input id="import-pdf" type="file" accept="application/pdf,.pdf" required></label></div><button class="primary" type="submit">上传并预览切块</button></form>
+<div id="draft-panel" hidden><p id="draft-summary"></p><div id="draft-chunks"></div><div class="pager"><button id="draft-previous" class="secondary">上一组片段</button><span id="draft-page"></span><button id="draft-next" class="secondary">下一组片段</button></div>
+<label class="consent"><input id="publish-consent" type="checkbox">我已确认资料范围和切块正文，允许将新版本完整语料发送至已配置的嵌入服务并产生调用费用（包括保留的其他文档片段）。</label><button id="publish" class="primary" disabled>入库并发布</button></div></section>
 <section class="admin-panel"><h2>会话记录 <span id="session-count" class="badge"></span></h2><p>仅展示已保存的成功轮次。失败请求仍保留在本地运行日志；语义是否正确需结合正文人工判断。</p><div class="admin-table"><table><thead><tr><th>问题</th><th>用户</th><th>产品</th><th>状态</th><th>操作</th></tr></thead><tbody id="sessions"></tbody></table></div><div class="pager"><button id="previous" class="secondary">上一页</button><span id="page-label"></span><button id="next" class="secondary">下一页</button></div></section>
-<section id="trace-panel" class="admin-panel" hidden><h2 id="trace-title">会话轨迹</h2><p>按轮查看：用户反馈 → 状态更新 → 检索 → 回复 → 校验。原始字段仅供管理员查看。</p><div id="trace"></div></section>
-</div></main><footer>SupportPilot<span>资料与会话 · 只读管理</span></footer></body></html>
+<section id="trace-panel" class="admin-panel" hidden><h2 id="trace-title">会话轨迹</h2><p>按轮查看：用户反馈 → 状态更新 → 检索 → 回复 → 校验。勾选需要评测的轮次（最多 12 轮）。</p><div id="trace"></div>
+<form id="eval-form" class="admin-form"><label>人工预期 / 评审备注<textarea id="eval-notes" maxlength="2000" rows="3" placeholder="记录你期待的行为和需要核查的点，备注保留在报告，不作为裁判标准答案。"></textarea></label><label>评测方式<select id="eval-mode"><option value="inspect">程序检查与报告（无模型调用）</option><option value="judge">程序检查 + 现有模型评审</option></select></label><label id="judge-consent-row" class="consent" hidden><input id="judge-consent" type="checkbox">允许将所选对话、状态和检索正文发送至已配置模型服务，可能产生费用；已检查这些内容适合发送。</label><button class="primary" type="submit">生成所选轮次报告</button></form></section>
+<section class="admin-panel"><h2>入库与评测任务</h2><p>任务状态与报告保留在本地。服务重启导致的中断会明确标记，不会自动重发外部请求。</p><div id="jobs"></div></section>
+<section id="report-panel" class="admin-panel" hidden><h2>评测报告</h2><a id="report-download">下载 Markdown 报告 ↓</a><div id="report-content"></div></section>
+</div></main><footer>SupportPilot<span>产品资料 · 会话轨迹 · 离线评测</span></footer></body></html>

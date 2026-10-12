@@ -46,32 +46,47 @@ class Credentials(BaseModel):
 
 class Runtime:
     """首次发送消息才加载模型/索引；浏览页面不请求外部服务。"""
-    def __init__(self):
+    def __init__(self, chunks_path=None):
         self.lock = Lock()
         self.resources = None
+        self.chunks_path = chunks_path or ROOT / ".local/corpus/chunks.json"
+
+    def publish_corpus(self, path, retrieve, commit):
+        with self.lock:
+            commit()
+            self.chunks_path = path
+            if self.resources is not None:
+                self.resources = (self.resources[0], retrieve)
 
     def __call__(self, **kwargs):
         with self.lock:
             if self.resources is None:
                 from supportpilot.bailian import bailian
-                self.resources = (bailian(), make_retriever(ROOT / ".local/corpus/chunks.json"))
-        model, retrieve = self.resources
+                self.resources = (bailian(), make_retriever(self.chunks_path))
+            model, retrieve = self.resources
         return run_turn_graph(model, retrieve=retrieve, **kwargs)
 
 
-def create_app(turn_runner=None, log_dir=None, db_path=None, admin_usernames=None):
+def create_app(turn_runner=None, log_dir=None, db_path=None, admin_usernames=None,
+               admin_workspace=None, corpus_indexer=None, judge_factory=None):
     app = FastAPI(title="SupportPilot", docs_url="/docs")
 
     @app.exception_handler(RequestValidationError)
     async def invalid_input(request, exc):
         # Pydantic 默认错误包含原始 input；认证表单不能回显密码。
+        if request.url.path.startswith('/admin/'):
+            return JSONResponse(status_code=422, content={'detail':'管理输入格式不正确：ID 使用小写字母、数字和连字符，检查资料链接、切块参数或轮次选择。'})
         return JSONResponse(status_code=422, content={"detail": "输入格式不正确：用户名为 3–32 位字母、数字或下划线；密码为 8–72 位且不超过 72 字节。" if request.url.path.startswith('/auth/') else "请输入有效文字或已接入的产品。"})
     config = json.loads((ROOT / "examples/rag/source.json").read_text(encoding="utf-8"))
-    products = json.loads((ROOT / "examples/rag/products.json").read_text(encoding="utf-8"))
-    by_product = {p["product_id"]: p for p in products}
+    from supportpilot.admin_support import AdminWorkspace
+    workspace = admin_workspace or AdminWorkspace(ROOT)
+    app.state.admin_workspace = workspace
+
+    def products():
+        return workspace.active()['products']
     locks = {}
     sessions_lock = Lock()
-    runner = turn_runner or Runtime()
+    runner = turn_runner or Runtime(workspace.active()['chunks_path'])
     logs = Path(log_dir) if log_dir else ROOT / ".local/web"
     store_path = Path(db_path) if db_path else ROOT / ".local/web/sessions.sqlite"
     app.state.store = None
@@ -118,7 +133,7 @@ def create_app(turn_runner=None, log_dir=None, db_path=None, admin_usernames=Non
         state = record["after"]
         closed = reply["kind"] in ("resolved", "handoff")
         cited = set(reply["evidence_ids"])
-        product = by_product[state["product_id"]]
+        product = next(p for p in products() if p['product_id'] == state['product_id'])
         sources = [{"id": p["id"], "title": product["name"] + " 用户手册",
                     "page": p.get("page"), "url": p["source_url"], "text": p["text"]}
                    for p in record["passages"] if p["id"] in cited]
@@ -182,7 +197,7 @@ def create_app(turn_runner=None, log_dir=None, db_path=None, admin_usernames=Non
     @app.post("/sessions", status_code=201)
     def create_session(body: SessionInput | None = None, owner: str = Depends(identity)):
         product_id = body.product_id if body and body.product_id is not None else config["product_id"]
-        if product_id not in by_product:
+        if product_id not in {p['product_id'] for p in products()}:
             raise HTTPException(422, "请选择已接入的产品。")
         if len(get_store().list_sessions(owner)) >= 200:
             raise HTTPException(503, "当前浏览器已达到演示会话上限。")
@@ -210,7 +225,7 @@ def create_app(turn_runner=None, log_dir=None, db_path=None, admin_usernames=Non
 
     @app.get("/products")
     def list_products():
-        return products
+        return products()
 
     @app.delete("/sessions/{session_id}")
     def delete_session(session_id: str, owner: str = Depends(identity)):
@@ -296,7 +311,8 @@ def create_app(turn_runner=None, log_dir=None, db_path=None, admin_usernames=Non
             lock.release()
 
     from supportpilot.admin import install_admin
-    install_admin(app, get_store=get_store, root=ROOT, web=WEB, admin_usernames=admin_usernames)
+    install_admin(app, get_store=get_store, root=ROOT, web=WEB, admin_usernames=admin_usernames,
+                  workspace=workspace, runner=runner, indexer=corpus_indexer, judge_factory=judge_factory)
     return app
 
 

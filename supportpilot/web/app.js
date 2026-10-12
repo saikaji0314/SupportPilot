@@ -227,7 +227,7 @@ setBusy(true);
 request('/products').then(async data => {
   products = data;
   $('product-select').replaceChildren(...products.map(p => {
-    const option = element('option', `${p.name} · US V1`);
+    const option = element('option', `${p.name} · ${p.variant}`);
     option.value = p.product_id;
     return option;
   }));
