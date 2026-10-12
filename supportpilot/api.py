@@ -59,7 +59,7 @@ class Runtime:
         return run_turn_graph(model, retrieve=retrieve, **kwargs)
 
 
-def create_app(turn_runner=None, log_dir=None, db_path=None):
+def create_app(turn_runner=None, log_dir=None, db_path=None, admin_usernames=None):
     app = FastAPI(title="SupportPilot", docs_url="/docs")
 
     @app.exception_handler(RequestValidationError)
@@ -145,6 +145,8 @@ def create_app(turn_runner=None, log_dir=None, db_path=None):
         return {"authenticated": bool(account), "username": account["username"] if account else None}
 
     def sign_in(body, request, response, owner, register):
+        if register and body.username.lower() in app.state.reserved_admin_names:
+            raise HTTPException(409, "该用户名已由管理配置保留。管理员请先注册账号，再配置管理名单并重启服务。")
         address = request.client.host if request.client else "local"
         with sessions_lock:
             attempts = [t for t in auth_attempts.get(address, []) if t > time.monotonic() - 60]
@@ -293,6 +295,8 @@ def create_app(turn_runner=None, log_dir=None, db_path=None):
         finally:
             lock.release()
 
+    from supportpilot.admin import install_admin
+    install_admin(app, get_store=get_store, root=ROOT, web=WEB, admin_usernames=admin_usernames)
     return app
 
 

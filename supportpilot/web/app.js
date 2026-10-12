@@ -103,13 +103,16 @@ async function refreshHistory() {
   const sessions = await request('/sessions');
   $('history-list').replaceChildren(...sessions.map(s => {
     const product = products.find(p => p.product_id === s.product_id);
-    const button = element('button', `${product?.name || s.product_id} · ${s.revision} 轮 · ${s.closed ? '已结束' : '可继续'}`);
+    const button = element('button');
+    button.append(element('span', s.title || '新会话', 'history-title'),
+      element('span', `${product?.name || s.product_id} · ${s.closed ? '已结束' : '可继续'}`, 'history-meta'));
+    button.title = s.title || '新会话';
     button.type = 'button'; button.dataset.session = s.id;
     button.classList.toggle('selected', s.id === sessionId);
     const row = element('div', undefined, 'history-row');
     const remove = element('button', '删除');
     remove.type = 'button'; remove.dataset.delete = s.id;
-    remove.setAttribute('aria-label', `删除 ${product?.name || s.product_id} 会话`);
+    remove.setAttribute('aria-label', `删除会话：${s.title || '新会话'}`);
     row.append(button, remove);
     return row;
   }));

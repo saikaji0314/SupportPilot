@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SupportPilot · 管理工作台</title><link rel="stylesheet" href="/static/style.css"><script defer src="/static/admin.js"></script></head>
+<body><header><a class="brand" href="/"><span class="logo">S</span>SupportPilot<span class="brand-note">管理工作台</span></a><a class="secondary" href="/">返回用户端 ↗</a></header>
+<main class="admin-main"><div class="admin-heading"><div><div class="eyebrow">SUPPORT OPERATIONS</div><h1>从记录中，理解每次回答。</h1><p>查看产品资料与已保存的对话，展开模型使用的事实、检索正文和校验结果。</p></div><button class="secondary" id="refresh">刷新工作台</button></div>
+<div id="admin-error" class="admin-panel" role="alert" hidden></div>
+<div id="admin-content" hidden>
+<section class="admin-panel"><h2>产品资料</h2><p id="index-note"></p><div id="documents" class="document-grid"></div></section>
+<section class="admin-panel"><h2>会话记录 <span id="session-count" class="badge"></span></h2><p>仅展示已保存的成功轮次。失败请求仍保留在本地运行日志；语义是否正确需结合正文人工判断。</p><div class="admin-table"><table><thead><tr><th>问题</th><th>用户</th><th>产品</th><th>状态</th><th>操作</th></tr></thead><tbody id="sessions"></tbody></table></div><div class="pager"><button id="previous" class="secondary">上一页</button><span id="page-label"></span><button id="next" class="secondary">下一页</button></div></section>
+<section id="trace-panel" class="admin-panel" hidden><h2 id="trace-title">会话轨迹</h2><p>按轮查看：用户反馈 → 状态更新 → 检索 → 回复 → 校验。原始字段仅供管理员查看。</p><div id="trace"></div></section>
+</div></main><footer>SupportPilot<span>资料与会话 · 只读管理</span></footer></body></html>

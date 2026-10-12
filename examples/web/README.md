@@ -39,3 +39,9 @@ GET /sessions 列出当前临时身份的会话，GET /sessions/{id} 恢复已�
 认证接口：GET /auth/me、POST /auth/register、POST /auth/login、POST /auth/logout。登录/注册接收 username、password 和可选 migrate_guest；凭据仅放在 HttpOnly Cookie 中，不在 localStorage 存密码或凭据。单进程认证接口按客户端地址每分钟限制 10 次尝试，反向代理、公网防护与部署另行配置。DELETE /sessions/{id} 只允许删除当前身份所属会话。
 
 回归命令：`python -m unittest tests.test_auth tests.test_api tests.test_session_store`。测试仅使用合成密码、临时数据库与模拟模型。
+
+## 用户界面与管理工作台
+
+历史会话以首条已保存的用户消息生成标题，保留产品和结束状态。登录弹窗、历史卡片及滚动条使用统一页面样式。
+
+已提供只读管理工作台：管理员名单、资料概览、会话分页与逐轮轨迹。启用方法与范围见 [ADMIN.md](ADMIN.md)。上传入库、版本发布和网页评测暂未实现。

@@ -141,9 +141,40 @@ class SessionStore:
 
     def list_sessions(self, owner_id):
         with closing(self.connect()) as db:
-            rows = db.execute("SELECT id, product_id, revision, closed FROM sessions WHERE owner_id=? ORDER BY rowid DESC",
+            rows = db.execute("""SELECT id, product_id, revision, closed,
+                (SELECT record_json FROM turns WHERE session_id=sessions.id ORDER BY revision LIMIT 1) AS first_turn
+                FROM sessions WHERE owner_id=? ORDER BY rowid DESC""",
                               (owner_id,)).fetchall()
-        return [dict(row) for row in rows]
+        return [self.session_summary(row) for row in rows]
+
+    @staticmethod
+    def session_summary(row):
+        item = dict(row)
+        first = json.loads(item.pop("first_turn") or "{}")
+        text = " ".join(first.get("user_text", "").split())
+        item["title"] = text[:28] + ("…" if len(text) > 28 else "") if text else "新会话"
+        return item
+
+    def admin_sessions(self, limit=50, offset=0):
+        """调用方必须已鉴权；只返回概览，不含凭据和内部身份 ID。"""
+        with closing(self.connect()) as db:
+            total = db.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+            rows = db.execute("""SELECT s.id, s.product_id, s.revision, s.closed,
+                COALESCE(a.username, '临时访客') AS username,
+                (SELECT record_json FROM turns WHERE session_id=s.id ORDER BY revision LIMIT 1) AS first_turn
+                FROM sessions s LEFT JOIN accounts a ON s.owner_id=a.owner_id
+                ORDER BY s.rowid DESC LIMIT ? OFFSET ?""", (limit, offset)).fetchall()
+        return {"total": total, "items": [self.session_summary(row) for row in rows]}
+
+    def admin_session(self, identifier):
+        with closing(self.connect()) as db:
+            db.execute("BEGIN")
+            row = db.execute("SELECT product_id, state_json FROM sessions WHERE id=?", (identifier,)).fetchone()
+            if row is None:
+                raise KeyError(identifier)
+            turns = db.execute("SELECT record_json FROM turns WHERE session_id=? ORDER BY revision", (identifier,)).fetchall()
+        return {"id": identifier, "product_id": row["product_id"], "state": json.loads(row["state_json"]),
+                "turns": [json.loads(turn[0]) for turn in turns]}
 
     def load_turns(self, owner_id, session_id):
         self.load(owner_id, session_id)
