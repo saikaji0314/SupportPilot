@@ -8,7 +8,7 @@
 
 ```powershell
 $env:SUPPORTPILOT_ADMIN_USERS = "你的已注册用户名"
-python -m uvicorn supportpilot.api:app --host 127.0.0.1 --port 8000
+python -m uvicorn supportpilot.server.api:app --host 127.0.0.1 --port 8000
 ```
 
 登录后打开 `http://127.0.0.1:8000/admin`。多个管理员使用英文逗号分隔；配置中的用户名禁止新注册抢注。修改名单需重启生效。保持单进程运行，不使用多个 workers。

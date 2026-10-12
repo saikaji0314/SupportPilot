@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from supportpilot.api import create_app
+from supportpilot.server.api import create_app
 from tests.test_api import fake_turn
 
 PASSWORD = 'Synthetic-only-123'
@@ -120,7 +120,7 @@ class AuthTests(unittest.TestCase):
             self.assertEqual(self.client.delete(f'/sessions/{identifier}').status_code, 503)
         self.assertEqual(self.client.get(f'/sessions/{identifier}').status_code, 200)
         self.client.post(f'/sessions/{identifier}/messages', json={'text': '合成记录'})
-        with patch('supportpilot.api.shutil.rmtree', side_effect=OSError):
+        with patch('supportpilot.server.api.shutil.rmtree', side_effect=OSError):
             result = self.client.delete(f'/sessions/{identifier}').json()
         self.assertTrue(result['deleted'])
         self.assertFalse(result['logs_removed'])

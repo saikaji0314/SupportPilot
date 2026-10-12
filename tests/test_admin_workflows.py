@@ -1,3 +1,4 @@
+from supportpilot.paths import ROOT
 from io import BytesIO
 import json
 from pathlib import Path
@@ -9,8 +10,8 @@ from fastapi.testclient import TestClient
 from pypdf import PdfWriter
 from pypdf.generic import DictionaryObject, NameObject, DecodedStreamObject
 
-from supportpilot.api import create_app, Runtime
-from supportpilot.admin_support import AdminWorkspace, read_json, write_json, index_corpus
+from supportpilot.server.api import create_app, Runtime
+from supportpilot.server.admin_support import AdminWorkspace, read_json, write_json, index_corpus
 from tests.test_api import fake_turn
 
 
@@ -35,7 +36,7 @@ class WorkflowTests(unittest.TestCase):
     def setUp(self):
         folder = tempfile.TemporaryDirectory(); self.addCleanup(folder.cleanup)
         self.root = Path(folder.name)
-        self.workspace = AdminWorkspace(Path(__file__).resolve().parents[1], self.root/'admin')
+        self.workspace = AdminWorkspace(ROOT, self.root/'admin')
         self.index_calls = []
         def indexer(chunks, path):
             self.index_calls.append(chunks)
@@ -115,7 +116,7 @@ class WorkflowTests(unittest.TestCase):
         session=self.client.post('/sessions').json()['session_id']
         self.client.post(f'/sessions/{session}/messages',json={'text':'合成测试'})
         body={'session_id':session,'turns':[1],'mode':'inspect','notes':'人工预期'}
-        with patch('supportpilot.bailian.bailian',side_effect=AssertionError('不能调用模型')):
+        with patch('supportpilot.providers.bailian.bailian',side_effect=AssertionError('不能调用模型')):
             response=self.client.post('/admin/api/evaluations',json=body)
         self.assertEqual(response.status_code,202,response.text)
         identifier=response.json()['id']
@@ -133,7 +134,7 @@ class WorkflowTests(unittest.TestCase):
     def test_judge_init_failure_reported_and_restart_marks_interrupted(self):
         session=self.client.post('/sessions').json()['session_id']
         self.client.post(f'/sessions/{session}/messages',json={'text':'合成测试'})
-        with patch('supportpilot.bailian.bailian',side_effect=TimeoutError('private')):
+        with patch('supportpilot.providers.bailian.bailian',side_effect=TimeoutError('private')):
             result=self.client.post('/admin/api/evaluations',json={'session_id':session,'turns':[1],
                                    'mode':'judge','confirm_external':True}).json()
         report=self.client.get('/admin/api/evaluations/'+result['id']).json()['report']
@@ -159,9 +160,9 @@ class WorkflowTests(unittest.TestCase):
         collection=Mock(); collection.count.return_value=1
         collection.get.return_value={'ids':[]}
         chunks=[{'id':'expected-id','text':'Synthetic','metadata':{}}]
-        with patch('supportpilot.rag_support.make_embedder',return_value=Mock()), \
-             patch('supportpilot.rag_support.open_collection',return_value=collection), \
-             patch('supportpilot.rag_support.index_chunks'):
+        with patch('supportpilot.knowledge.rag_support.make_embedder',return_value=Mock()), \
+             patch('supportpilot.knowledge.rag_support.open_collection',return_value=collection), \
+             patch('supportpilot.knowledge.rag_support.index_chunks'):
             with self.assertRaises(ValueError):
                 index_corpus(chunks,self.root/'chunks.json')
 

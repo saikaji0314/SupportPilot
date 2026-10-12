@@ -3,9 +3,9 @@
 from copy import deepcopy
 import unittest
 
-from supportpilot.chat_support import finish_turn, new_state
-from supportpilot.conversation import FactUpdate, Feedback, merge_feedback
-from supportpilot.grounded import GroundedResponse
+from supportpilot.agent.chat_support import finish_turn, new_state
+from supportpilot.agent.conversation import FactUpdate, Feedback, merge_feedback
+from supportpilot.agent.grounded import GroundedResponse
 
 
 class ChatSupportTests(unittest.TestCase):

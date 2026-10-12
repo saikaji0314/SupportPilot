@@ -5,8 +5,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from supportpilot.grounded import GroundedResponse
-from supportpilot.response_replay import load_payload, replay
+from supportpilot.agent.grounded import GroundedResponse
+from supportpilot.cli.response_replay import load_payload, replay
 
 
 class ReplayTests(unittest.TestCase):
@@ -18,7 +18,7 @@ class ReplayTests(unittest.TestCase):
              patch.object(Path, "write_text") as write:
             payload, original = load_payload(Path("synthetic-turn.json"))
             reply = GroundedResponse(kind="ask_user", text="请确认缺少的当前参数。")
-            with patch("supportpilot.response_replay.propose_response", return_value=reply) as propose:
+            with patch("supportpilot.cli.response_replay.propose_response", return_value=reply) as propose:
                 result = replay("fake-model", payload)
                 propose.assert_called_once_with("fake-model", user_text=record["user_text"],
                                                  state=record["updated"], passages=[])

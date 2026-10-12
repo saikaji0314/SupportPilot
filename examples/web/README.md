@@ -5,12 +5,12 @@
 在项目根目录、已能运行 chat_demo 的 Python 环境中启动。沿用现有模型配置与 Chroma 索引，另需安装 fastapi 和 uvicorn。
 
 ```powershell
-python -m uvicorn supportpilot.api:app --host 127.0.0.1 --port 8000
+python -m uvicorn supportpilot.server.api:app --host 127.0.0.1 --port 8000
 ```
 
 打开 http://127.0.0.1:8000 。发送消息时才调用模型与检索服务。选择示例问题后需点击发送；引用可展开查看正文、PDF 页序与官方链接。
 
-- 入口：supportpilot/api.py；页面：supportpilot/web/。
+- 入口：supportpilot/server/api.py；页面：supportpilot/server/static/。
 - 会话保存在 .local/web/sessions.sqlite。浏览器临时 Cookie 验证归属；刷新恢复上次会话，服务重启后可从历史列表继续。当前按单进程演示运行，不要启用多个 workers。
 - 失败会提示重试，服务端保留之前已接受的状态；同一会话不同时处理多个输入。
 - 每个会话最多 12 个成功轮次；每个临时身份最多创建 200 个会话。

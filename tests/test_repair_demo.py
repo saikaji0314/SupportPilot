@@ -1,9 +1,9 @@
 from copy import deepcopy
 import unittest
 
-from supportpilot.chat_support import new_state
-from supportpilot.grounded import GroundedResponse
-from supportpilot.repair_demo import run_repair
+from supportpilot.agent.chat_support import new_state
+from supportpilot.agent.grounded import GroundedResponse
+from supportpilot.cli.repair_demo import run_repair
 
 
 class RepairDemoTests(unittest.TestCase):

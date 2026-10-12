@@ -1,9 +1,9 @@
 """离线评审外围：不读取密钥、不请求外部模型。"""
 from copy import deepcopy
 import unittest
-from supportpilot.trajectory import normalize_record, render_trace
-from supportpilot.eval_demo import run_review
-from supportpilot.evaluation import RUBRIC, validate_review
+from supportpilot.evaluation.trajectory import normalize_record, render_trace
+from supportpilot.cli.eval_demo import run_review
+from supportpilot.evaluation.reviewer import RUBRIC, validate_review
 
 
 def replay_record():

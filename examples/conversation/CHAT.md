@@ -5,8 +5,8 @@
 `chat.py` 中的 `build_retrieval_query` 与 `run_turn` 已实现。外围已提供终端交互、逐轮本地记录、检查编号、引用与有限重复校验。已运行恢复与转交链路，事实纠正可保留其他信息；操作适用前提仍存在待改进的失败案例。
 
 ```powershell
-python -m supportpilot.chat_demo
-python -m supportpilot.chat_demo --chat
+python -m supportpilot.cli.chat_demo
+python -m supportpilot.cli.chat_demo --chat
 ```
 
 默认预览不请求服务。`--chat` 使用现有索引，每轮会请求聊天与嵌入服务；不自动入库。每次启动是新会话，输入 `/exit` 退出。问题恢复或建议人工接手时结束本次会话；不会创建真实工单。
@@ -17,4 +17,4 @@ python -m supportpilot.chat_demo --chat
 
 引用存在、产品归属正确、没有完全重复，不代表步骤的语义正确或适用条件已满足，仍需人工查看实际对话。
 
-单轮回复回放可用 `python -m supportpilot.response_replay --record <本地记录路径>` 预览原轮输入；加 `--run` 只调用回复模型，不重新检索。输出保存在 `.local/response-replay/`，用于对照提示修改前后的行为，不覆盖原记录。
+单轮回复回放可用 `python -m supportpilot.cli.response_replay --record <本地记录路径>` 预览原轮输入；加 `--run` 只调用回复模型，不重新检索。输出保存在 `.local/response-replay/`，用于对照提示修改前后的行为，不覆盖原记录。

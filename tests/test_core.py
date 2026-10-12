@@ -1,9 +1,9 @@
 import unittest
 from dataclasses import asdict
 
-from supportpilot.core import choose_next_action, merge_observation
-from supportpilot.demo import evidence_by_id, observations
-from supportpilot.state import SessionState
+from supportpilot.legacy.core import choose_next_action, merge_observation
+from supportpilot.legacy.demo import evidence_by_id, observations
+from supportpilot.legacy.state import SessionState
 
 
 class CoreTests(unittest.TestCase):

@@ -5,10 +5,10 @@ import unittest
 from contextlib import closing
 import sqlite3
 
-from supportpilot.chat_support import finish_turn
-from supportpilot.conversation import Feedback
-from supportpilot.grounded import GroundedResponse
-from supportpilot.session_store import SessionStore, SessionConflict
+from supportpilot.agent.chat_support import finish_turn
+from supportpilot.agent.conversation import Feedback
+from supportpilot.agent.grounded import GroundedResponse
+from supportpilot.storage.session_store import SessionStore, SessionConflict
 
 
 class SessionStoreTests(unittest.TestCase):

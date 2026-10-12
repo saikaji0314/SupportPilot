@@ -7,10 +7,10 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from supportpilot.api import Runtime, create_app
-from supportpilot.chat_graph import run_turn_graph
-from supportpilot.conversation import Feedback
-from supportpilot.grounded import GroundedResponse
+from supportpilot.server.api import Runtime, create_app
+from supportpilot.agent.chat_graph import run_turn_graph
+from supportpilot.agent.conversation import Feedback
+from supportpilot.agent.grounded import GroundedResponse
 
 
 def fake_turn(*, user_text, state, on_progress):
@@ -120,9 +120,9 @@ class ApiTests(unittest.TestCase):
 
     def test_runtime_loads_shared_corpus(self):
         runtime = Runtime()
-        with patch('supportpilot.bailian.bailian', return_value=object()), \
-             patch('supportpilot.api.make_retriever', return_value=object()) as retrieve, \
-             patch('supportpilot.api.run_turn_graph', return_value={}) as graph:
+        with patch('supportpilot.providers.bailian.bailian', return_value=object()), \
+             patch('supportpilot.server.api.make_retriever', return_value=object()) as retrieve, \
+             patch('supportpilot.server.api.run_turn_graph', return_value={}) as graph:
             runtime(user_text='问题', state={'product_id': 'tp-link-re315-us-v1'})
         self.assertEqual(retrieve.call_args.args[0].name, 'chunks.json')
         self.assertEqual(retrieve.call_args.args[0].parent.name, 'corpus')
@@ -137,9 +137,9 @@ class ApiTests(unittest.TestCase):
         client = TestClient(app)
         identifier = client.post('/sessions').json()['session_id']
         path = f'/sessions/{identifier}/messages'
-        with patch('supportpilot.api.run_turn_graph', wraps=run_turn_graph) as graph_call, \
-             patch('supportpilot.chat_graph.extract_feedback', side_effect=[Feedback(), Feedback(issue_status='resolved')]), \
-             patch('supportpilot.chat_graph.propose_response', side_effect=[
+        with patch('supportpilot.server.api.run_turn_graph', wraps=run_turn_graph) as graph_call, \
+             patch('supportpilot.agent.chat_graph.extract_feedback', side_effect=[Feedback(), Feedback(issue_status='resolved')]), \
+             patch('supportpilot.agent.chat_graph.propose_response', side_effect=[
                  GroundedResponse(kind='recommend_check', text='合成检查', evidence_ids=['p1']),
                  GroundedResponse(kind='resolved', text='已恢复')]):
             first = client.post(path, json={'text': '无法上网'})
@@ -161,14 +161,14 @@ class ApiTests(unittest.TestCase):
         identifier = client.post('/sessions').json()['session_id']
         before = deepcopy(self.saved(app, client, identifier)['state'])
         path = f'/sessions/{identifier}/messages'
-        with patch('supportpilot.chat_graph.extract_feedback', return_value=Feedback(facts=[{'text': '未提交事实'}])), \
-             patch('supportpilot.chat_graph.propose_response', side_effect=TimeoutError('private provider')):
+        with patch('supportpilot.agent.chat_graph.extract_feedback', return_value=Feedback(facts=[{'text': '未提交事实'}])), \
+             patch('supportpilot.agent.chat_graph.propose_response', side_effect=TimeoutError('private provider')):
             failed = client.post(path, json={'text': '问题'})
         self.assertEqual(failed.status_code, 504)
         self.assertEqual(self.saved(app, client, identifier)['state'], before)
         self.assertNotIn('private provider', failed.text)
-        with patch('supportpilot.chat_graph.extract_feedback', return_value=Feedback()), \
-             patch('supportpilot.chat_graph.propose_response', return_value=GroundedResponse(kind='handoff', text='缺资料')):
+        with patch('supportpilot.agent.chat_graph.extract_feedback', return_value=Feedback()), \
+             patch('supportpilot.agent.chat_graph.propose_response', return_value=GroundedResponse(kind='handoff', text='缺资料')):
             retried = client.post(path, json={'text': '问题'})
         self.assertEqual(retried.status_code, 200)
         self.assertEqual(len(self.saved(app, client, identifier)['state']['messages']), 2)
@@ -187,9 +187,9 @@ class ApiTests(unittest.TestCase):
                 identifier = client.post('/sessions').json()['session_id']
                 before = deepcopy(self.saved(app, client, identifier)['state'])
                 kwargs = {'side_effect': outcome} if isinstance(outcome, Exception) else {'return_value': outcome}
-                with patch('supportpilot.chat_graph.extract_feedback', return_value=Feedback()), \
-                     patch('supportpilot.chat_graph.propose_response', return_value=bad), \
-                     patch('supportpilot.chat_graph.repair_response', **kwargs) as repair:
+                with patch('supportpilot.agent.chat_graph.extract_feedback', return_value=Feedback()), \
+                     patch('supportpilot.agent.chat_graph.propose_response', return_value=bad), \
+                     patch('supportpilot.agent.chat_graph.repair_response', **kwargs) as repair:
                     response = client.post(f'/sessions/{identifier}/messages', json={'text': '问题'})
                 self.assertEqual(response.status_code, expected)
                 self.assertEqual(repair.call_count, 1)

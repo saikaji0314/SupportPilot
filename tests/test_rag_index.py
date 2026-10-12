@@ -4,7 +4,7 @@ import contextlib
 import io
 import unittest
 
-from supportpilot.rag_support import index_chunks
+from supportpilot.knowledge.rag_support import index_chunks
 
 
 class MemoryCollection:

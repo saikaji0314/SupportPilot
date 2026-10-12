@@ -11,7 +11,7 @@
 运行给定资料的四例评估（会调用模型）：
 
 ```powershell
-python -m supportpilot.grounded_demo
+python -m supportpilot.cli.grounded_demo
 ```
 
-当前脚本已改为运行四例并调用用户配置的模型，命令行参数尚未接入；使用 `python -m supportpilot.grounded_demo` 执行评估。也可向 `run_case(model, "case-01")` 传入已配置的模型客户端。回复函数已实现，一轮四例行为符合当前目标；这不是 RAG 或多轮记忆的验收。
+当前脚本已改为运行四例并调用用户配置的模型，命令行参数尚未接入；使用 `python -m supportpilot.cli.grounded_demo` 执行评估。也可向 `run_case(model, "case-01")` 传入已配置的模型客户端。回复函数已实现，一轮四例行为符合当前目标；这不是 RAG 或多轮记忆的验收。

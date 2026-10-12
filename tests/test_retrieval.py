@@ -3,7 +3,7 @@
 from copy import deepcopy
 import unittest
 
-from supportpilot.retrieval import chunk_pages, retrieve_passages
+from supportpilot.knowledge.retrieval import chunk_pages, retrieve_passages
 
 
 class RetrievalTests(unittest.TestCase):

@@ -2,11 +2,11 @@ from copy import deepcopy
 import unittest
 from unittest.mock import patch
 
-from supportpilot.chat import run_turn
-from supportpilot.chat_graph import run_turn_graph, build_turn_graph
-from supportpilot.chat_support import new_state
-from supportpilot.conversation import Feedback
-from supportpilot.grounded import GroundedResponse
+from supportpilot.agent.chat import run_turn
+from supportpilot.agent.chat_graph import run_turn_graph, build_turn_graph
+from supportpilot.agent.chat_support import new_state
+from supportpilot.agent.conversation import Feedback
+from supportpilot.agent.grounded import GroundedResponse
 
 
 class ChatGraphTests(unittest.TestCase):
@@ -14,7 +14,7 @@ class ChatGraphTests(unittest.TestCase):
         state = new_state("demo")
         original = deepcopy(state)
         outputs, events, calls = [], [], []
-        for target, runner in [("supportpilot.chat", run_turn), ("supportpilot.chat_graph", run_turn_graph)]:
+        for target, runner in [("supportpilot.agent.chat", run_turn), ("supportpilot.agent.chat_graph", run_turn_graph)]:
             stages, queries = [], []
             def retrieve(query, product_id):
                 queries.append((query, product_id))
@@ -52,7 +52,7 @@ class ChatGraphTests(unittest.TestCase):
     def test_timeout_propagates_without_mutating_input(self):
         state = new_state("demo")
         original = deepcopy(state)
-        with patch("supportpilot.chat_graph.extract_feedback", side_effect=TimeoutError):
+        with patch("supportpilot.agent.chat_graph.extract_feedback", side_effect=TimeoutError):
             with self.assertRaises(TimeoutError):
                 run_turn_graph(None, user_text="问题", state=state, retrieve=lambda *a, **kw: [])
         self.assertEqual(state, original)

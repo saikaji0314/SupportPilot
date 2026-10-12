@@ -5,8 +5,8 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from supportpilot.api import create_app
-from supportpilot.admin import document_inventory
+from supportpilot.server.api import create_app
+from supportpilot.server.admin import document_inventory
 from tests.test_api import fake_turn
 
 

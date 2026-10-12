@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 
-from supportpilot.corpus_demo import prepare_corpus, check_isolation
-from supportpilot.retrieval import retrieve_passages
-from supportpilot.chat_support import with_preceding_context
+from supportpilot.cli.corpus_demo import prepare_corpus, check_isolation
+from supportpilot.knowledge.retrieval import retrieve_passages
+from supportpilot.agent.chat_support import with_preceding_context
 
 
 class CorpusTests(unittest.TestCase):
@@ -14,12 +14,12 @@ class CorpusTests(unittest.TestCase):
                     {"document_id": name, "product_id": name, "source_revision": "r"},
                     {"chunk_size": 100, "overlap": 10})
         with patch('pathlib.Path.read_text', return_value='{"sources":["a","b"]}'), \
-             patch('supportpilot.corpus_demo.load_source', side_effect=source):
+             patch('supportpilot.cli.corpus_demo.load_source', side_effect=source):
             chunks = prepare_corpus()
             self.assertEqual(len(chunks), 2)
             self.assertNotEqual(chunks[0]['metadata']['product_id'], chunks[1]['metadata']['product_id'])
         with patch('pathlib.Path.read_text', return_value='{"sources":["a","a"]}'), \
-             patch('supportpilot.corpus_demo.load_source', side_effect=source):
+             patch('supportpilot.cli.corpus_demo.load_source', side_effect=source):
             with self.assertRaises(ValueError):
                 prepare_corpus()
 

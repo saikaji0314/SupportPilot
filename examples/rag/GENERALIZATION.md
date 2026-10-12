@@ -7,10 +7,10 @@
 下载完整 PDF 保存为 `.local/research/RE315-US-V1-user-guide.pdf`；AX55 原文路径见 source.json。原文与生成物不入 Git。
 
 ```powershell
-python -m supportpilot.corpus_demo --prepare
-python -m supportpilot.corpus_demo --index
-python -m supportpilot.corpus_demo --check
-python -m supportpilot.corpus_demo --answer --case re315-check
+python -m supportpilot.cli.corpus_demo --prepare
+python -m supportpilot.cli.corpus_demo --index
+python -m supportpilot.cli.corpus_demo --check
+python -m supportpilot.cli.corpus_demo --answer --case re315-check
 ```
 
 prepare 仅处理本地文字；index/check 调用嵌入服务，answer 还调用聊天模型。结果保存在 `.local/generalization/<id>/result.json`。本入口不覆盖 `.local/rag/chunks.json` 或切换网页产品。新集合包含两份完整资料，集合名称变化，因此首次入库会重新嵌入两份资料；失败重跑可跳过已写片段。

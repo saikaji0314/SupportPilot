@@ -4,10 +4,10 @@ from copy import deepcopy
 import unittest
 from unittest.mock import patch
 
-from supportpilot.chat import run_turn
-from supportpilot.chat_support import new_state, with_preceding_context
-from supportpilot.conversation import Feedback
-from supportpilot.grounded import GroundedResponse
+from supportpilot.agent.chat import run_turn
+from supportpilot.agent.chat_support import new_state, with_preceding_context
+from supportpilot.agent.conversation import Feedback
+from supportpilot.agent.grounded import GroundedResponse
 
 
 class ChatProgressTests(unittest.TestCase):
@@ -21,8 +21,8 @@ class ChatProgressTests(unittest.TestCase):
             progress["stage"] = stage
 
         passages = [{"id": "p1", "text": "合成资料", "product_ids": ["product"]}]
-        with patch("supportpilot.chat.extract_feedback", return_value=Feedback()), \
-             patch("supportpilot.chat.propose_response", side_effect=TimeoutError("private response")):
+        with patch("supportpilot.agent.chat.extract_feedback", return_value=Feedback()), \
+             patch("supportpilot.agent.chat.propose_response", side_effect=TimeoutError("private response")):
             with self.assertRaises(TimeoutError):
                 run_turn(object(), user_text="问题", state=state,
                          retrieve=lambda query, product_id: passages, on_progress=on_progress)
@@ -40,7 +40,7 @@ class ChatProgressTests(unittest.TestCase):
             progress.update(data)
             progress["stage"] = stage
 
-        with patch("supportpilot.chat.extract_feedback", side_effect=TimeoutError()):
+        with patch("supportpilot.agent.chat.extract_feedback", side_effect=TimeoutError()):
             with self.assertRaises(TimeoutError):
                 run_turn(object(), user_text="问题", state=new_state("product"),
                          retrieve=None, on_progress=on_progress)
@@ -50,8 +50,8 @@ class ChatProgressTests(unittest.TestCase):
     def test_success_still_records_and_accepts_a_turn(self):
         reply = GroundedResponse(kind="ask_user", text="请补充现象。")
         stages = []
-        with patch("supportpilot.chat.extract_feedback", return_value=Feedback()), \
-             patch("supportpilot.chat.propose_response", return_value=reply):
+        with patch("supportpilot.agent.chat.extract_feedback", return_value=Feedback()), \
+             patch("supportpilot.agent.chat.propose_response", return_value=reply):
             result = run_turn(object(), user_text="问题", state=new_state("product"),
                               retrieve=lambda query, product_id: [],
                               on_progress=lambda stage, data: stages.append(stage))

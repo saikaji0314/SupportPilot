@@ -3,9 +3,9 @@ import json
 import unittest
 from unittest.mock import Mock
 
-from supportpilot.chat_support import new_state
-from supportpilot.grounded import GroundedResponse
-from supportpilot.response_repair import repair_response
+from supportpilot.agent.chat_support import new_state
+from supportpilot.agent.grounded import GroundedResponse
+from supportpilot.agent.response_repair import repair_response
 
 
 class ResponseRepairTests(unittest.TestCase):
