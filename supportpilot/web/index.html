@@ -1,13 +1,16 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SupportPilot · 产品支持</title><link rel="stylesheet" href="/static/style.css"><script defer src="/static/app.js"></script></head>
 <body>
-<header><a class="brand" href="/" aria-label="SupportPilot 首页"><span class="logo">S</span>SupportPilot<span class="brand-note">产品支持</span></a><span class="prototype">本地演示</span></header>
+<header><a class="brand" href="/" aria-label="SupportPilot 首页"><span class="logo">S</span>SupportPilot<span class="brand-note">产品支持</span></a><div class="account-actions"><span id="account-label">临时访客</span><button id="open-auth" class="secondary">登录 / 注册</button><button id="logout" class="secondary" hidden>退出登录</button></div></header>
+<dialog id="auth-dialog"><form id="auth-form"><h2>登录或创建账号</h2><p>登录后可在其他浏览器找回账号会话。</p><label for="username">用户名</label><input id="username" name="username" autocomplete="username" required pattern="[A-Za-z0-9_]{3,32}" minlength="3" maxlength="32" placeholder="3–32 位字母、数字或下划线"><label for="password">密码</label><input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="72" placeholder="至少 8 位"><label class="check-label"><input id="migrate-guest" type="checkbox" checked>将本浏览器的临时会话保存到账号</label><p id="auth-error" role="alert" hidden></p><div class="dialog-actions"><button id="cancel-auth" type="button">取消</button><button type="submit" value="register">注册并登录</button><button type="submit" value="login">登录</button></div></form></dialog>
+<dialog id="delete-dialog"><h2>删除这条会话？</h2><p>消息、排障状态、引用记录和对应诊断日志将被删除，无法恢复。</p><div class="dialog-actions"><button id="cancel-delete" type="button">取消</button><button id="confirm-delete" type="button">确认删除</button></div></dialog>
 <main>
 <aside>
  <div class="eyebrow">SUPPORT CENTER</div><h1>让问题，<br>一步步清晰。</h1><p class="intro">基于产品手册，了解你的设备，找到有依据的下一步。</p>
  <section class="product"><label class="eyebrow" for="product-select">选择设备</label><select id="product-select" disabled aria-label="选择产品"><option>正在加载产品…</option></select><div id="device-art" class="router" aria-hidden="true"><i></i><i></i><i></i><i></i><div class="router-body"><b></b><b></b><b></b></div></div><h2 id="product-name">Archer AX55</h2><p id="product-variant">TP-Link · 美国地区 · V1</p><a id="manual" target="_blank" rel="noopener noreferrer">查看官方手册 ↗</a></section>
  <div class="guide"><strong>从描述现象开始</strong><p>告诉我看到了什么、已经尝试过什么。每次确认一个步骤，再决定下一步。</p></div>
- <p class="local-note">切换产品会新建会话。服务重启后，会话会重置。</p>
+ <section class="history"><strong>历史会话</strong><div id="history-list" aria-label="历史会话列表"></div></section>
+ <p class="local-note">登录后会话保存到账号。访客会话仅由本浏览器的 Cookie 恢复；切换产品会新建会话。</p>
 </aside>
 <section class="workspace" aria-label="客服对话">
  <div class="chat-header"><div><span class="online-dot"></span><strong>售后助手</strong><span id="state-label">准备就绪</span></div><button id="new-chat" class="secondary">＋ 新会话</button></div>

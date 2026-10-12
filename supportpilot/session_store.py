@@ -3,6 +3,9 @@ from contextlib import closing
 import json
 from pathlib import Path
 import sqlite3
+import hashlib
+import secrets
+import time
 from uuid import uuid4
 
 from supportpilot.chat_support import new_state
@@ -18,6 +21,17 @@ class SessionStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self.connect()) as db, db:
             db.executescript("""
+                CREATE TABLE IF NOT EXISTS accounts (
+                    owner_id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS account_tokens (
+                    token_hash TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES accounts(owner_id),
+                    expires_at REAL NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS guests (
+                    token_hash TEXT PRIMARY KEY, owner_id TEXT NOT NULL UNIQUE
+                );
                 CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY, owner_id TEXT NOT NULL,
                     product_id TEXT NOT NULL, state_json TEXT NOT NULL,
@@ -47,6 +61,20 @@ class SessionStore:
                        (identifier, owner_id, product_id, json.dumps(new_state(product_id), ensure_ascii=False)))
         return identifier
 
+    def resolve_guest(self, token=None):
+        """验证随机 Cookie 凭据；无效时创建新身份，数据库只保存凭据哈希。"""
+        with closing(self.connect()) as db, db:
+            if token and len(token) <= 128:
+                digest = hashlib.sha256(token.encode()).hexdigest()
+                row = db.execute("SELECT owner_id FROM guests WHERE token_hash=?", (digest,)).fetchone()
+                if row:
+                    return row[0], None
+            token = secrets.token_urlsafe(32)
+            owner = uuid4().hex
+            db.execute("INSERT INTO guests VALUES (?, ?)",
+                       (hashlib.sha256(token.encode()).hexdigest(), owner))
+        return owner, token
+
     def load(self, owner_id, session_id):
         with closing(self.connect()) as db:
             row = db.execute("SELECT * FROM sessions WHERE id=? AND owner_id=?",
@@ -55,6 +83,61 @@ class SessionStore:
             raise KeyError("会话不存在或不属于当前身份")
         return {"id": row["id"], "state": json.loads(row["state_json"]),
                 "revision": row["revision"], "closed": bool(row["closed"])}
+
+    def account_for_owner(self, owner):
+        with closing(self.connect()) as db:
+            row = db.execute("SELECT username FROM accounts WHERE owner_id=?", (owner,)).fetchone()
+        return {"username": row[0]} if row else None
+
+    def resolve_account(self, token):
+        if not token or len(token) > 128:
+            return None
+        with closing(self.connect()) as db:
+            row = db.execute("SELECT owner_id FROM account_tokens WHERE token_hash=? AND expires_at>?",
+                             (hashlib.sha256(token.encode()).hexdigest(), time.time())).fetchone()
+        return row[0] if row else None
+
+    def authenticate(self, username, password, *, register=False, guest_owner=None):
+        from supportpilot.passwords import hash_password, verify_password
+        username = username.lower()
+        with closing(self.connect()) as db:
+            account = db.execute("SELECT * FROM accounts WHERE username=?", (username,)).fetchone()
+        if register:
+            if account:
+                raise ValueError("用户名已被使用")
+            owner, password_hash = uuid4().hex, hash_password(password)
+        else:
+            if not verify_password(password, account["password_hash"] if account else None):
+                raise PermissionError("用户名或密码错误")
+            owner, password_hash = account["owner_id"], None
+        token = secrets.token_urlsafe(32)
+        with closing(self.connect()) as db, db:
+            db.execute("BEGIN IMMEDIATE")
+            if register:
+                try:
+                    db.execute("INSERT INTO accounts VALUES (?, ?, ?)", (owner, username, password_hash))
+                except sqlite3.IntegrityError:
+                    raise ValueError("用户名已被使用") from None
+            if guest_owner and not db.execute("SELECT 1 FROM accounts WHERE owner_id=?", (guest_owner,)).fetchone():
+                db.execute("UPDATE sessions SET owner_id=? WHERE owner_id=?", (owner, guest_owner))
+                db.execute("DELETE FROM guests WHERE owner_id=?", (guest_owner,))
+            db.execute("INSERT INTO account_tokens VALUES (?, ?, ?)",
+                       (hashlib.sha256(token.encode()).hexdigest(), owner, time.time() + 30 * 86400))
+        return token
+
+    def revoke_account_token(self, token):
+        if token:
+            with closing(self.connect()) as db, db:
+                db.execute("DELETE FROM account_tokens WHERE token_hash=?",
+                           (hashlib.sha256(token.encode()).hexdigest(),))
+
+    def delete_session(self, owner, identifier):
+        with closing(self.connect()) as db, db:
+            db.execute("BEGIN IMMEDIATE")
+            if not db.execute("SELECT 1 FROM sessions WHERE id=? AND owner_id=?", (identifier, owner)).fetchone():
+                raise KeyError("会话不存在或不属于当前身份")
+            db.execute("DELETE FROM turns WHERE session_id=?", (identifier,))
+            db.execute("DELETE FROM sessions WHERE id=? AND owner_id=?", (identifier, owner))
 
     def list_sessions(self, owner_id):
         with closing(self.connect()) as db:

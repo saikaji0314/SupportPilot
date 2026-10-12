@@ -1,0 +1,2 @@
+# Additional dependency for website account authentication.
+bcrypt>=5.0.0,<6
