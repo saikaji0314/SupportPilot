@@ -1,18 +1,27 @@
-# 真实文档 RAG 实验入口
+# 单文档 RAG
 
-本实验使用 [AX55 型号手册](https://www.tp-link.com/us/document/79681/) 的完整提取文本，经过自动切块、嵌入和 Chroma 检索，交给已有模型回复接口。不读取 grounded 的手写 passages 作为知识库。
+从官方文档提取页面文字，经自动切块、嵌入与 Chroma 检索，为模型提供可引用正文。适合定位文本提取、召回和正文利用各环节的问题。
 
-资料原文位于被忽略的 .local/research，公开仓库只保存来源配置和合成查询。使用者自行取得官方 PDF，可以将 source.json 的 source_path 改为本地 PDF 路径；PDF 文本提取需要 pypdf。当前已有按页提取的 TXT，可直接使用。
+## 准备资料
 
-核心 chunk_pages 和 retrieve_passages 已实现。真实手册已完成入库，并验证一个中文登录问题能够召回英文正文并生成有引用回答。另已运行端口用途与无法上网查询：排障案例召回相关正文，端口用途案例仍未正确回答，需检查召回与资料利用，当前不是多轮排障验收。
+从 [AX55 用户手册](https://www.tp-link.com/us/document/79681/) 获取 PDF，保存到运行环境，并将 `source.json` 的 `source_path` 指向它，例如 `.local/research/AX55-US-V1-user-guide.pdf`。默认配置指向提取后的 TXT，该文件不随仓库分发。路径相对于仓库根目录；元数据包含文档 ID、产品 ID、来源、范围与切块参数。
 
 ```powershell
 python -m supportpilot.cli.rag_demo --inspect
 python -m supportpilot.cli.rag_demo --prepare
 python -m supportpilot.cli.rag_demo --index
 python -m supportpilot.cli.rag_demo --query "如何打开路由器管理页面？"
+python -m supportpilot.cli.rag_demo --answer-rag
 ```
 
-inspect 不调用模型；prepare 不调用模型；index、query 需要配置嵌入服务并可能发起请求。重复 index 会跳过已入库片段。当前新增 --answer-rag，会检索并调用聊天模型回答 queries.json 中的三条示例；answer_with_rag 也可由调用方传入已配置模型。
+| 参数 | 行为 |
+| --- | --- |
+| inspect | 本地提取与页面统计 |
+| prepare | 自动切块，保存 `.local/rag/chunks.json` |
+| index | 请求嵌入并写入集合；相同集合的已有 ID 跳过 |
+| query | 嵌入查询、按产品过滤并返回片段 |
+| answer-rag | 检索并调用模型回答 `queries.json` 中的问题 |
 
-切块原文、索引、召回正文与模型结果均保存在 Git 忽略路径。产品归属来自 source.json，增加产品资料使用同类配置与函数。
+inspect/prepare 不调用外部服务；其余命令需配置嵌入，answer-rag 还需要聊天模型。原文与生成物均在 Git 忽略目录。网页使用多产品或已发布语料，单文档 CLI 不改变网页在线版本。
+
+核心接口：`chunk_pages`、`retrieve_passages` 与 `index_chunks`。多产品接入见 [GENERALIZATION.md](GENERALIZATION.md)。

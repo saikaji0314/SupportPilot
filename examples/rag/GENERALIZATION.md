@@ -1,10 +1,12 @@
-# 多产品同库验证
+# 多产品语料与检索隔离
 
-通过 corpus.json 列举来源配置，共用 chunk_pages、retrieve_passages、with_preceding_context 和 run_turn_graph。来源配置只包含文档、产品归属、来源和切块参数，无产品专属排障分支。
+`corpus.json` 列举资料来源配置，Archer AX55 US V1 与 RE315 US V1 共用切块、产品过滤、上下文补块和图执行逻辑。产品差异来自资料与元数据。
 
-当前样本为 Archer AX55 US V1 与 RE315 US V1。第二份资料来自 [RE315 US V1 官方支持页](https://www.tp-link.com/us/support/download/re315/v1/?app=t) 的[用户手册](https://www.tp-link.com/us/document/76068/)。手册共用 RE315/RE215，但这里只登记已选择的 RE315 US V1；不自动扩大型号或固件适用范围。
+## 准备与运行
 
-下载完整 PDF 保存为 `.local/research/RE315-US-V1-user-guide.pdf`；AX55 原文路径见 source.json。原文与生成物不入 Git。
+获取 [AX55 手册](https://www.tp-link.com/us/document/79681/) 和 [RE315 手册](https://www.tp-link.com/us/document/76068/)，将两个来源 JSON 的 `source_path` 指向本地文件。AX55 默认指向提取 TXT，首次复现需改为下载的 PDF；RE315 默认路径为 `.local/research/RE315-US-V1-user-guide.pdf`。
+
+RE315 资料由 [美国站 V1 支持入口](https://www.tp-link.com/us/support/download/re315/v1/?app=t) 提供。手册共用 RE315/RE215，示例只登记 RE315 US V1，不扩大到其他型号或固件。
 
 ```powershell
 python -m supportpilot.cli.corpus_demo --prepare
@@ -13,8 +15,8 @@ python -m supportpilot.cli.corpus_demo --check
 python -m supportpilot.cli.corpus_demo --answer --case re315-check
 ```
 
-prepare 仅处理本地文字；index/check 调用嵌入服务，answer 还调用聊天模型。结果保存在 `.local/generalization/<id>/result.json`。本入口不覆盖 `.local/rag/chunks.json` 或切换网页产品。新集合包含两份完整资料，集合名称变化，因此首次入库会重新嵌入两份资料；失败重跑可跳过已写片段。
+prepare 生成 `.local/corpus/chunks.json`，不调用外部服务。index/check 请求嵌入；answer 还调用聊天模型。检查与回答记录位于 `.local/generalization/<id>/result.json`。
 
-五项检索样例覆盖两个产品的相同登录提问、扩展器指示灯解释、扩展器排障与未知产品。过滤和前文补块均保持 product_id。使用合成向量的真实 Chroma 隔离测试已通过；真实嵌入召回与回答质量需另验，不能将隔离通过等同于语义正确。
+`generalization-cases.json` 覆盖跨产品的相同登录问题、信号灯说明、排障与未知产品。产品过滤与前文补块均保持归属。隔离检查核对返回片段的产品信息，正文相关性与操作依据需要另外评估。
 
-产品由命令行案例显式指定。本增量不验证自然语言型号识别、同一对话切换产品、多个地区/版本并存。网页已增加产品选择并使用该混合语料；切换创建新会话。`--answer` 复用图运行独立的一轮，不是新的多轮验收。
+CLI 构建基线混合语料；首次启动且没有管理端发布版本时，网页读取该基线。管理端发布后，网页使用版本指针，重新运行此 CLI 不覆盖已发布版本。语料或嵌入配置变化会换集合，可能重新嵌入完整语料。

@@ -1,20 +1,21 @@
-# 连续 RAG 对话入口
+# 终端对话与回复回放
 
-复用反馈提取、事实合并、产品检索与资料驱动回复。新增 `messages` 保存会话原话，`checks` 保存检查及反馈，`pending` 指向待确认检查。资料仍使用正文与基本产品元数据。
-
-`chat.py` 中的 `build_retrieval_query` 与 `run_turn` 已实现。外围已提供终端交互、逐轮本地记录、检查编号、引用与有限重复校验。已运行恢复与转交链路，事实纠正可保留其他信息；操作适用前提仍存在待改进的失败案例。
+终端入口复用反馈提取、状态合并、产品检索和资料驱动回复，适合观察一条会话中的事实变化。
 
 ```powershell
 python -m supportpilot.cli.chat_demo
 python -m supportpilot.cli.chat_demo --chat
 ```
 
-默认预览不请求服务。`--chat` 使用现有索引，每轮会请求聊天与嵌入服务；不自动入库。每次启动是新会话，输入 `/exit` 退出。问题恢复或建议人工接手时结束本次会话；不会创建真实工单。
+默认仅展示结构；chat 使用单文档索引 `.local/rag/chunks.json`，需要先运行 [RAG 导入](../rag/README.md)。每轮调用聊天与嵌入服务。每次启动是新会话，输入 `/exit` 退出；恢复或交接后结束。网页的多产品、持久化及图修正入口见 [Web](../web/README.md)。
 
-记录保存在被忽略的 `.local/chat/`，每轮独立保存用户输入、旧状态、反馈、合并状态、检索文本、检索正文、候选回复、校验结果和新状态。校验失败保留诊断材料，停止实验，不把候选回复写入已接受的会话。
+`facts` 记录用户事实，`checks` 保存检查及反馈，`pending` 保存待答项，`messages` 保留原话。轮记录存入 `.local/chat/`，包含 before、feedback、updated、query、passages、response、errors 与 after。被拒候选保留为诊断材料，不写入已接受会话。
 
-每一步开始前会显示当前阶段并保存已完成的中间结果；异常或中断也会保留记录。检索命中补充同文档前一块，以减少适用条件截断。
+## 固定输入的回复回放
 
-引用存在、产品归属正确、没有完全重复，不代表步骤的语义正确或适用条件已满足，仍需人工查看实际对话。
+```powershell
+python -m supportpilot.cli.response_replay --record <轮记录.json>
+python -m supportpilot.cli.response_replay --record <轮记录.json> --run
+```
 
-单轮回复回放可用 `python -m supportpilot.cli.response_replay --record <本地记录路径>` 预览原轮输入；加 `--run` 只调用回复模型，不重新检索。输出保存在 `.local/response-replay/`，用于对照提示修改前后的行为，不覆盖原记录。
+默认只预览；run 固定原状态与检索正文，重新调用回复模型，不重新检索或提取反馈。结果保存在 `.local/response-replay/`，原记录保持不变。

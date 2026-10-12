@@ -1,6 +1,7 @@
 """外围接线：读取真实文档、嵌入客户端和入库；不选择排障动作。"""
 
 from supportpilot.paths import ROOT
+from supportpilot.config import load_embedding_config
 import hashlib
 import json
 from pathlib import Path
@@ -71,17 +72,14 @@ class TextEmbedder:
 
 def make_embedder() -> TextEmbedder:
     # 仅显式入库/查询时加载配置；inspect 和 prepare 不触发。
-    import os
-    from dotenv import load_dotenv
     from openai import OpenAI
 
-    load_dotenv(ROOT / ".env")
-    key = os.getenv("SUPPORTPILOT_EMBEDDING_API_KEY") or os.getenv("API_KEY")
-    base_url = os.getenv("SUPPORTPILOT_EMBEDDING_BASE_URL")
-    if not key or not base_url:
+    config = load_embedding_config()
+    if not config.api_key or not config.base_url:
         raise ValueError("请在本地配置嵌入服务密钥与 SUPPORTPILOT_EMBEDDING_BASE_URL；使用与账号地域匹配的地址。")
-    model = os.getenv("SUPPORTPILOT_EMBEDDING_MODEL", "text-embedding-v4")
-    return TextEmbedder(OpenAI(api_key=key, base_url=base_url, timeout=60, max_retries=1), model)
+    client = OpenAI(api_key=config.api_key, base_url=config.base_url,
+                    timeout=config.timeout, max_retries=config.max_retries)
+    return TextEmbedder(client, config.model, dimensions=config.dimensions)
 
 
 def collection_name(chunks: list[dict], embedder: TextEmbedder) -> str:

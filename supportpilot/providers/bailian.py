@@ -1,17 +1,14 @@
-from supportpilot.paths import ROOT
 from langchain_openai import ChatOpenAI
-import os
-from pathlib import Path
-from dotenv import load_dotenv
+from supportpilot.config import load_chat_config
 
 
-def bailian(*, timeout: float = 60.0, max_retries: int = 0):
-    load_dotenv(ROOT / ".env")
+def bailian(*, timeout: float | None = None, max_retries: int | None = None):
+    config = load_chat_config()
     chatLLM = ChatOpenAI(
-        timeout=timeout,
-        max_retries=max_retries,
-        api_key=os.getenv("API_KEY"),
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        model="qwen3.7-plus-2026-05-26",
+        timeout=config.timeout if timeout is None else timeout,
+        max_retries=config.max_retries if max_retries is None else max_retries,
+        api_key=config.api_key,
+        base_url=config.base_url,
+        model=config.model,
     )
     return chatLLM

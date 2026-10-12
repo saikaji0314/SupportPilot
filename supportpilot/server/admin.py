@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
 from supportpilot.server.admin_support import DocumentInput, ReviewInput, index_corpus, read_json, write_json, review_selection
+from supportpilot.config import admin_usernames as configured_admin_usernames
 
 
 def document_inventory(root):
@@ -32,8 +33,7 @@ def document_inventory(root):
 
 def install_admin(app, *, get_store, root, web, admin_usernames=None,
                   workspace=None, runner=None, indexer=None, judge_factory=None):
-    configured = (os.getenv('SUPPORTPILOT_ADMIN_USERS', '').split(',')
-                  if admin_usernames is None else admin_usernames)
+    configured = configured_admin_usernames() if admin_usernames is None else admin_usernames
     allowed = frozenset(name.strip().lower() for name in configured if name.strip())
     app.state.reserved_admin_names = allowed
 

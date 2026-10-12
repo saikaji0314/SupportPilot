@@ -1,8 +1,6 @@
-# 多轮反馈实验
+# 反馈提取与状态合并
 
-验证用户反馈如何改变事实、检查记录和问题状态。案例均为合成数据，不含真实会话或产品排障知识库。
-
-`conversation.py` 定义反馈结构与已实现的提取、合并函数；`conversation_demo.py` 提供预览、给定反馈的合并、模型反馈提取三个入口。反馈样例已验证；连续 RAG 对话入口与待实现接口见 [CHAT.md](CHAT.md)。
+使用合成反馈观察事实纠正、检查结果与问题状态如何进入会话记忆。`cases.json` 中的人工反馈示例用于对照，不作为产品知识库。
 
 ```powershell
 python -m supportpilot.cli.conversation_demo
@@ -10,4 +8,8 @@ python -m supportpilot.cli.conversation_demo --merge-only
 python -m supportpilot.cli.conversation_demo --run
 ```
 
-默认只预览。`--run` 会调用聊天服务。案例中的 `example_feedback` 和 `review` 仅供人工对照，执行模型时只传用户文本和 State。输出存入被忽略的 `.local/conversation/`。
+默认预览输入；merge-only 使用给定反馈执行纯 Python 合并；run 调用模型提取反馈，再执行合并。模型只接收用户文本与 State，`example_feedback` 和 `review` 不作为答案传入。
+
+输出保存在 `.local/conversation/`。核心接口位于 `agent/conversation.py`：`extract_feedback` 解析本轮反馈，`merge_feedback` 合并事实、纠正与检查结果。
+
+完整终端对话和回复回放见 [CHAT.md](CHAT.md)。

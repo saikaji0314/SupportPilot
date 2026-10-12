@@ -3,6 +3,7 @@ from supportpilot.paths import ROOT
 from collections import Counter
 from copy import deepcopy
 from hashlib import sha256
+from supportpilot.evaluation.reviewer import evaluator_fingerprints
 import json
 import os
 from pathlib import Path
@@ -273,13 +274,14 @@ def review_selection(folder, *, model_factory=None):
         counts[evaluation['judge_status']] += 1
         results.append({'trace':trace, 'evaluation':evaluation})
     report = {'mode':selection['mode'], 'notes':selection['notes'], 'rubric':RUBRIC,
-              'evaluator_code_sha256':sha256((ROOT / 'supportpilot/evaluation/reviewer.py').read_bytes()).hexdigest(),
+              **evaluator_fingerprints(),
               'judge_status_counts':dict(counts), 'results':results}
     write_json(folder / 'result.json', report)
     content = '# 管理端评测报告\n\n仅评审保存的回复，不重跑客服。程序检查不保证语义正确。\n\n'
     content += f"模式：{selection['mode']}；选择轮数：{len(results)}。\n\n"
     notes = json.dumps({'notes':selection['notes'], 'judge_status_counts':dict(counts),
-                        'evaluator_code_sha256':report['evaluator_code_sha256']}, ensure_ascii=False, indent=2)
+                        'evaluator_code_sha256':report['evaluator_code_sha256'],
+                        'evaluator_prompt_sha256':report['evaluator_prompt_sha256']}, ensure_ascii=False, indent=2)
     fence = '`' * max(3, max((len(s)+1 for s in re.findall(r'`+', notes)), default=3))
     content += f'## 备注与评审状态\n\n{fence}json\n{notes}\n{fence}\n\n'
     for item in results:

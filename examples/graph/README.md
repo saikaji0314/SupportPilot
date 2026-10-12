@@ -1,19 +1,14 @@
-# LangGraph 单轮入口
+# LangGraph 单轮编排与回放
 
-supportpilot/agent/chat_graph.py 用主链路节点和一个修正节点复用既有提取、合并、查询、检索、回复和校验函数，提供兼容 run_turn 的 run_turn_graph。网页/API 已通过 Runtime 调用 run_turn_graph；graph_demo 仍可独立运行。
-
-需要已可运行原聊天功能的 Python 环境及 langgraph；基础接线已在 LangGraph 1.2.12 验证。
+图主链路组织反馈提取、状态合并、查询构建、检索、回复与校验。校验拒绝后进入一次修正节点，再次拒绝则结束且不提交状态。超时、合并与结构解析异常走错误处理。
 
 ```powershell
-python -m supportpilot.cli.graph_demo --record <完整的turn记录.json>
+python -m supportpilot.cli.graph_demo --record <完整轮记录.json>
+python -m supportpilot.cli.graph_demo --record <完整轮记录.json> --run
 ```
 
-默认固定记录里的反馈、资料和候选回复，不调用模型；只检查本地数据传递与结果重现。matches_saved 不衡量回复质量。加 --run 才从原 before 和用户反馈调用真实模型与检索服务，可能产生费用。只支持完整 chat/web 轮记录。
+默认使用保存的反馈、资料与最终候选回放数据传递，不调用服务，也不重演记录中的内部修正。`matches_saved` 表示与保存结果的一致性。run 从原 before 与用户反馈重新执行，调用模型与检索，启用有界修正。
 
-结果存于 Git 忽略的 .local/graph/。没有 checkpoint，每次显式传入会话状态；END 表示本轮结束。网页和 --run 已启用最多一次候选修正：finish_turn 拒绝后进入 repair_response，再回到 finish_turn；再次拒绝则结束且不提交状态。超时、反馈合并异常和结构解析异常直接返回失败，不触发此分支。不接在线模型裁判。
+输入需要 before、user_text、feedback、passages 和 response。结果保存至 `.local/graph/`。修正候选与错误保存在 `repair_attempts`；最终 response/errors/after 对应最终校验结果。
 
-修正时记录 repair_attempts（原候选与错误）；最终 response/errors/after 对应再次校验结果。默认离线回放关闭修正，只重现记录里的最终候选，不重演内部修正轨迹。
-
-```powershell
-python -m unittest discover -s tests -p test_chat_graph.py
-```
+图接口为 `build_turn_graph` / `run_turn_graph`，网页调用同一入口。State 显式传入；SQLite 提交业务状态，图没有启用 checkpoint。END 表示本轮执行结束，回复质量由独立评测检查。

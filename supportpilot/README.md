@@ -3,6 +3,7 @@
 ```text
 supportpilot/
 ├── agent/              # 资料驱动的对话与排障
+│   └── prompts/        # 回复、反馈提取和候选修正的系统提示词
 ├── knowledge/          # 文档读取、切块、嵌入和检索
 ├── evaluation/         # 轨迹、规则检查、语义评审和报告
 ├── storage/            # SQLite 会话与账号数据
@@ -11,10 +12,10 @@ supportpilot/
 ├── server/             # FastAPI、管理端和前端静态文件
 │   └── static/         # 用户端/管理端 HTML、CSS、JavaScript
 ├── cli/                # 命令行实验、回放与演示入口
-├── legacy/             # 早期固定分支教学原型
+├── legacy/             # 历史固定分支实现
 ├── paths.py            # 仓库根路径
-├── utils.py            # 少量通用工具
-└── api.py、*_demo.py等 # 旧命令兼容入口，实际实现位于上述目录
+├── config.py           # 模型连接配置与管理员名单读取
+└── api.py              # 网页旧启动入口
 ```
 
 ## 从哪里读
@@ -22,6 +23,8 @@ supportpilot/
 | 关注点 | 文件与关键函数 |
 | --- | --- |
 | 模型如何选回复 | `agent/grounded.py` → `propose_response` |
+| 修改系统提示词 | `agent/prompts/response.py`、`feedback.py`、`repair.py`；`evaluation/prompts.py` |
+| 修改运行配置 | `config.py` → `load_chat_config`、`load_embedding_config`、`admin_usernames` |
 | 如何理解反馈并记住事实 | `agent/conversation.py` → `extract_feedback`、`merge_feedback` |
 | 一轮对话怎样串起来 | `agent/chat_graph.py` → `build_turn_graph`、`run_turn_graph` |
 | 哪些检查由程序执行 | `agent/chat_support.py` → `response_errors`、`finish_turn` |
@@ -45,7 +48,7 @@ python -m supportpilot.cli.corpus_demo --check
 python -m supportpilot.cli.eval_demo --record examples/evaluation/synthetic-replay.json
 ```
 
-旧的 `supportpilot.api:app` 和 `python -m supportpilot.<原命令模块>` 仍可使用。兼容文件只转发到新实现，不复制业务逻辑。业务代码和测试统一从新模块路径导入，例如：
+旧的 `supportpilot.api:app` 仍可使用。命令行统一使用 `supportpilot.cli` 下的入口。业务代码和测试从对应模块导入，例如：
 
 ```python
 from supportpilot.agent.chat_graph import run_turn_graph
@@ -54,3 +57,11 @@ from supportpilot.storage.session_store import SessionStore
 ```
 
 资源路径统一基于 `paths.ROOT`，不依赖启动目录。运行数据继续保存在被 Git 忽略的目录。
+
+## 提示词与配置边界
+
+提示词文件只保存系统文本；调用函数负责组织本轮 JSON 输入、指定结构化输出并调用模型。State 合并和校验仍在业务模块内。各领域的小型 Pydantic 契约保留在使用它的模块中。
+
+`config.py` 按需读取模型配置，进程环境优先于 `.env`，不写回进程环境，也不在导入时创建客户端。聊天默认超时 60 秒、重试 0 次；嵌入默认超时 60 秒、重试 1 次、维度 1024。`bailian(timeout=..., max_retries=...)` 可覆盖聊天调用预算。管理员名单只取进程环境，在服务启动时固定。
+
+文档来源、产品范围和切块参数仍在来源 JSON 中；上传限制、会话规则和路径常量保留在负责它们的模块内。评测结果分别记录实现文件与提示词/评审标准的 SHA-256，避免提示词拆出后丢失版本信息。

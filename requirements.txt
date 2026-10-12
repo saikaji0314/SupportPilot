@@ -1,0 +1,10 @@
+# Direct dependency versions; transitive dependencies are not fully locked.
+fastapi==0.142.2
+uvicorn==0.54.0
+pydantic==2.13.5
+langchain-openai==1.6.7
+langgraph==1.2.12
+chromadb==1.5.9
+pypdf==6.19.0
+python-dotenv==1.2.4
+bcrypt==5.0.0

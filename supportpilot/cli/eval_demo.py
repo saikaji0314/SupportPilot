@@ -1,18 +1,13 @@
 """默认只读旧记录并出本地报告；--judge 才调用评审模型，不重跑客服。"""
 from supportpilot.paths import ROOT
 import argparse
-from collections import Counter
-from hashlib import sha256
 import json
 from pathlib import Path
 from uuid import uuid4
 
-from supportpilot.evaluation.reviewer import RUBRIC, evaluate_response, validate_review, review_consistency_errors
+from supportpilot.evaluation.reviewer import RUBRIC, evaluator_fingerprints
 from supportpilot.evaluation.trajectory import load_trace, render_trace
-
-
-
-from supportpilot.evaluation.service import inspect_rules, run_review
+from supportpilot.evaluation.service import run_review
 
 
 def main():
@@ -28,7 +23,7 @@ def main():
     folder.mkdir(parents=True)
     result = {"schema_version": 2, "trace": trace, "rubric": RUBRIC,
               "mode": "judge" if args.judge else "inspect",
-              "evaluator_code_sha256": sha256((ROOT / "supportpilot/evaluation/reviewer.py").read_bytes()).hexdigest(),
+              **evaluator_fingerprints(),
               "evaluation": {"judge_status": "running" if args.judge else "not_run"}}
 
     def save():
