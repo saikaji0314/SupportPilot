@@ -31,6 +31,7 @@ supportpilot/
 | 回复被拒后怎样修正 | `agent/response_repair.py` → `repair_response` |
 | 文档如何进入检索 | `knowledge/rag_support.py` → `load_source`、`index_chunks`；`knowledge/retrieval.py` → `chunk_pages`、`retrieve_passages` |
 | 如何做离线评测 | `evaluation/service.py` → `run_review`；`evaluation/reviewer.py` → `evaluate_response`；`evaluation/trajectory.py` → `normalize_record`、`render_trace` |
+| 如何计算 Ragas 指标 | `evaluation/service.py` → `run_ragas_review`；`evaluation/ragas_adapter.py` → `prepare_sample`、`RagasScorer`、`run_ragas` |
 | 会话如何保存 | `storage/session_store.py` → `SessionStore` |
 | 网页与管理端 | `server/api.py` → `create_app`；`server/admin.py` → `install_admin`；`server/admin_support.py` → `AdminWorkspace` |
 | 页面样式和交互 | `server/static/` |

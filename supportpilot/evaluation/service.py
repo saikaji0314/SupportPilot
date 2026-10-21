@@ -38,3 +38,11 @@ def run_review(trace: dict, *, model=None, evaluator=evaluate_response) -> dict:
     return result
 
 
+def run_ragas_review(trace: dict) -> dict:
+    """Ragas 与业务裁判独立计分；保留同一份程序检查结果。"""
+    from supportpilot.evaluation.ragas_adapter import run_ragas
+    result = run_review(trace)
+    result["ragas"] = run_ragas(trace)
+    return result
+
+

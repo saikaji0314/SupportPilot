@@ -99,6 +99,7 @@ async function loadJobs() {
     if(job.error_type) row.append(el('span',job.error_type,'job-error'));
     if(job.warning) row.append(el('span',job.warning,'job-error'));
     if(job.judge_status_counts) row.append(el('small',`裁判状态：${JSON.stringify(job.judge_status_counts)}`));
+    if(job.ragas_status_counts && Object.keys(job.ragas_status_counts).length) row.append(el('small',`Ragas 状态：${JSON.stringify(job.ragas_status_counts)}`));
     if(job.kind==='evaluation'&&job.status==='completed') {const b=el('button','查看报告','secondary');b.dataset.report=job.id;row.append(b);}
     if(job.kind==='publish'&&['error','interrupted'].includes(job.status)) {const b=el('button','重新预览草稿','secondary');b.dataset.draft=job.draft_id;row.append(b);}
     return row;
@@ -143,13 +144,13 @@ $('publish').onclick=async()=>{
   try{await post(`/admin/api/documents/drafts/${draftId}/publish`,{confirm_external:true});draftId=null;$('publish-consent').checked=false;await loadJobs();}
   catch(e){error(e);}finally{busy(false);}
 };
-$('eval-mode').onchange=()=>{$('judge-consent-row').hidden=$('eval-mode').value!=='judge';$('judge-consent').checked=false;};
+$('eval-mode').onchange=()=>{$('judge-consent-row').hidden=$('eval-mode').value==='inspect';$('judge-consent').checked=false;};
 $('eval-form').addEventListener('submit',async e=>{
   e.preventDefault();if(pending||!inspectedSession)return;
   const turns=Array.from($('trace').querySelectorAll('[data-turn]:checked')).map(c=>Number(c.value));
   const mode=$('eval-mode').value;
   if(!turns.length || turns.length>12){error(new Error('请选择 1–12 个轮次。'));return;}
-  if(mode==='judge'&&!$('judge-consent').checked){error(new Error('模型评审需勾选发送与费用确认。'));return;}
+  if(mode!=='inspect'&&!$('judge-consent').checked){error(new Error('外部评测需勾选发送与费用确认。'));return;}
   busy(true);$('admin-error').hidden=true;
   try{await post('/admin/api/evaluations',{session_id:inspectedSession,turns,mode,notes:$('eval-notes').value,confirm_external:$('judge-consent').checked});await loadJobs();$('jobs').scrollIntoView({behavior:'smooth'});}
   catch(e){error(e);}finally{busy(false);}
@@ -171,6 +172,12 @@ $('jobs').addEventListener('click',async e=>{
       const evaluation=item.evaluation, names={grounding:'正文支持',preconditions:'操作前提',history:'会话历史'}, verdicts={pass:'通过',fail:'未通过',unclear:'无法判断',not_applicable:'不适用'};
       block.append(el('p',`程序检查：${evaluation.rules?.status==='completed' ? (evaluation.rules.errors.length ? '发现问题' : '通过有限规则') : '未完成'} · 模型评审状态：${evaluation.judge_status}`));
       (evaluation.review?.items || []).forEach(r=>block.append(el('p',`${names[r.criterion_id] || r.criterion_id}：${verdicts[r.verdict] || r.verdict}。${r.reason}`)));
+      if(evaluation.ragas) {
+        const ragas=evaluation.ragas, metricNames={faithfulness:'正文支持度',context_utilization:'最终上下文利用情况'};
+        block.append(el('p',`Ragas：${ragas.status}${ragas.reason ? ' · '+ragas.reason : ''}${ragas.error_type ? ' · '+ragas.error_type : ''}`));
+        (ragas.metrics || []).forEach(m=>block.append(el('p',`${metricNames[m.name] || m.name}：${m.status==='completed' ? m.value.toFixed(3) : m.status}${m.reason ? ' · '+m.reason : ''}${m.error_type ? ' · '+m.error_type : ''}`)));
+        block.append(el('small','Ragas 使用实际传入生成模型的最终正文顺序（可能包含前文补块）；分数不等于原始召回排名、引用正确或排障前提成立。'));
+      }
       jsonSection(block,'评审详情（无效评审不计入成绩）',evaluation);$('report-content').append(block);
     });
     $('report-panel').hidden=false;$('report-panel').scrollIntoView({behavior:'smooth'});

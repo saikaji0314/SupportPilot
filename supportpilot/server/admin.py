@@ -150,8 +150,8 @@ def install_admin(app, *, get_store, root, web, admin_usernames=None,
 
     @app.post('/admin/api/evaluations', status_code=202)
     def evaluate(body: ReviewInput, background: BackgroundTasks, account=Depends(admin_identity)):
-        if body.mode == 'judge' and not body.confirm_external:
-            raise HTTPException(422, '模型评审会发送所选对话和检索正文，请明确确认。')
+        if body.mode in ('judge', 'ragas') and not body.confirm_external:
+            raise HTTPException(422, '外部评测会发送所选对话和检索正文并产生调用费用，请明确确认。')
         saved = missing(lambda: get_store().admin_session(body.session_id))
         numbers = sorted(set(body.turns))
         if any(n < 1 or n > len(saved['turns']) for n in numbers):

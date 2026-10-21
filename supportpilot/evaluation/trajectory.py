@@ -51,6 +51,11 @@ def render_trace(trace: dict, evaluation: dict) -> str:
         fence = "`" * max(3, max((len(x) + 1 for x in re.findall(r"`+", content)), default=3))
         return f"{fence}json\n{content}\n{fence}\n"
     parts = ["# 单轮轨迹与评审\n", "仅展示记录与评审；程序检查通过不等于语义正确。\n"]
+    if "ragas" in evaluation:
+        ragas = evaluation["ragas"]
+        parts.extend(["## Ragas 指标\n",
+                      "基于保存的生成上下文（含前文补块）；不代表原始召回排名或排障前提成立。\n",
+                      block({k: ragas[k] for k in ("status", "reason", "error_type", "ragas_version", "model", "metrics") if k in ragas})])
     for title, value in [("范围与运行状态", {k: trace[k] for k in
                          ("scope", "execution_status", "accepted", "missing", "provenance")}),
                          ("历史及过程快照", trace["snapshots"]),

@@ -55,7 +55,7 @@ class DocumentInput(BaseModel):
 class ReviewInput(BaseModel):
     session_id: str = Field(pattern=r'^[a-f0-9]{32}$')
     turns: list[int] = Field(min_length=1, max_length=12)
-    mode: str = Field(pattern=r'^(inspect|judge)$')
+    mode: str = Field(pattern=r'^(inspect|judge|ragas)$')
     notes: str = Field(default='', max_length=2000)
     confirm_external: bool = False
 
@@ -256,11 +256,11 @@ def index_corpus(chunks, path):
 
 
 def review_selection(folder, *, model_factory=None):
-    from supportpilot.evaluation.service import run_review
+    from supportpilot.evaluation.service import run_review, run_ragas_review
     from supportpilot.evaluation.reviewer import RUBRIC
     from supportpilot.evaluation.trajectory import render_trace
     selection = read_json(folder / 'selection.json')
-    results, counts = [], Counter()
+    results, counts, ragas_counts = [], Counter(), Counter()
     model, initialization_error = None, None
     if selection['mode'] == 'judge':
         try:
@@ -268,14 +268,16 @@ def review_selection(folder, *, model_factory=None):
         except Exception as exc:
             initialization_error = type(exc).__name__
     for trace in selection['traces']:
-        evaluation = run_review(trace, model=model)
+        evaluation = run_ragas_review(trace) if selection['mode'] == 'ragas' else run_review(trace, model=model)
         if initialization_error:
             evaluation.update(judge_status='error', error_type=initialization_error)
         counts[evaluation['judge_status']] += 1
+        if 'ragas' in evaluation:
+            ragas_counts[evaluation['ragas']['status']] += 1
         results.append({'trace':trace, 'evaluation':evaluation})
     report = {'mode':selection['mode'], 'notes':selection['notes'], 'rubric':RUBRIC,
               **evaluator_fingerprints(),
-              'judge_status_counts':dict(counts), 'results':results}
+              'judge_status_counts':dict(counts), 'ragas_status_counts':dict(ragas_counts), 'results':results}
     write_json(folder / 'result.json', report)
     content = '# 管理端评测报告\n\n仅评审保存的回复，不重跑客服。程序检查不保证语义正确。\n\n'
     content += f"模式：{selection['mode']}；选择轮数：{len(results)}。\n\n"
@@ -287,4 +289,4 @@ def review_selection(folder, *, model_factory=None):
     for item in results:
         content += render_trace(item['trace'], item['evaluation']) + '\n\n'
     (folder / 'report.md').write_text(content, encoding='utf-8')
-    return {'judge_status_counts':dict(counts), 'turn_count':len(results)}
+    return {'judge_status_counts':dict(counts), 'ragas_status_counts':dict(ragas_counts), 'turn_count':len(results)}

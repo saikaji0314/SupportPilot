@@ -131,6 +131,24 @@ class WorkflowTests(unittest.TestCase):
         self.client.delete('/sessions/'+session)
         self.assertEqual(self.client.get('/admin/api/evaluations/'+identifier).json()['report'],report['report'])
 
+    def test_ragas_uses_saved_snapshot_requires_consent_and_keeps_report(self):
+        session=self.client.post('/sessions').json()['session_id']
+        self.client.post(f'/sessions/{session}/messages',json={'text':'合成 Ragas 测试'})
+        body={'session_id':session,'turns':[1],'mode':'ragas','notes':'人工备注不进入评分输入'}
+        with patch('supportpilot.evaluation.ragas_adapter.run_ragas') as scorer:
+            self.assertEqual(self.client.post('/admin/api/evaluations',json=body).status_code,422)
+            scorer.assert_not_called()
+            scorer.return_value={'status':'completed','metrics':[{'name':'faithfulness','status':'completed','value':.5}]}
+            response=self.client.post('/admin/api/evaluations',json={**body,'confirm_external':True})
+            self.assertEqual(response.status_code,202,response.text)
+            self.assertNotIn(body['notes'],json.dumps(scorer.call_args.args[0]))
+        identifier=response.json()['id']
+        report=self.client.get('/admin/api/evaluations/'+identifier).json()['report']
+        self.assertEqual(report['ragas_status_counts'],{'completed':1})
+        self.assertEqual(report['results'][0]['evaluation']['ragas']['metrics'][0]['value'],.5)
+        self.assertEqual(report['judge_status_counts'],{'not_run':1})
+        self.assertEqual(self.client.get(f'/admin/api/evaluations/{identifier}/report').status_code,200)
+
     def test_judge_init_failure_reported_and_restart_marks_interrupted(self):
         session=self.client.post('/sessions').json()['session_id']
         self.client.post(f'/sessions/{session}/messages',json={'text':'合成测试'})

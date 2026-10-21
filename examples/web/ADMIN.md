@@ -35,6 +35,8 @@ python -m uvicorn supportpilot.server.api:app --host 127.0.0.1 --port 8000
 4. 可选择“程序检查 + 现有模型评审”，勾选允许发送所选对话/正文与费用确认后提交。
 5. 任务完成后点击“查看报告”，也可下载 Markdown。
 
+安装 `requirements-ragas.txt` 并重启服务后，也可选择“程序检查 + Ragas 指标”。同样需要勾选发送与费用确认；它复用所选轮次的快照，展示 Faithfulness 与 Context Utilization 的独立数值和状态。Ragas 可能为每个片段分别调用模型；具体输入口径、跳过条件和失败说明见 [Ragas 指标指南](../evaluation/README.md#ragas-指标)。任务完成只表示报告已生成，仍需查看 `ragas_status_counts` 和每项状态，不能把评测错误算成通过。
+
 复用 `normalize_record → run_review → render_trace`；不重跑客服，不修改会话，不重新检索。程序通过、裁判 pass、实际设备恢复是不同结论。裁判错误/超时、无效评审、unclear 与 not_applicable 保留区别；审计缺失或矛盾输出标记为无效评审，不统计成通过。
 
 评测选择是独立私有快照。删除用户会话不会删除已选入评测的快照或报告；用户删除提示已说明这一点。评测和资料任务保存在 `.local/admin/`，向量集合在被忽略的 `data/indexes/`。服务重启将未完成任务标记为 interrupted，不自动重发外部请求；发布是否生效以当前资料版本为准。
