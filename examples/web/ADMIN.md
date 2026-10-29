@@ -33,11 +33,18 @@ python -m uvicorn supportpilot.server.api:app --host 127.0.0.1 --port 8000
 2. 可填人工预期/备注。它会保存到报告，当前不会作为裁判输入或标准答案。
 3. 默认“程序检查与报告”：保存输入、合并后 State、检索正文、候选回复快照，并复用现有有限规则；不调用模型。
 4. 可选择“程序检查 + 现有模型评审”，勾选允许发送所选对话/正文与费用确认后提交。
-5. 任务完成后点击“查看报告”，也可下载 Markdown。
+5. 任务完成后点击“查看报告”，可下载 Markdown，或下载 JSON 报告。
 
 安装 `requirements-ragas.txt` 并重启服务后，也可选择“程序检查 + Ragas 指标”。同样需要勾选发送与费用确认；它复用所选轮次的快照，展示 Faithfulness 与 Context Utilization 的独立数值和状态。Ragas 可能为每个片段分别调用模型；具体输入口径、跳过条件和失败说明见 [Ragas 指标指南](../evaluation/README.md#ragas-指标)。任务完成只表示报告已生成，仍需查看 `ragas_status_counts` 和每项状态，不能把评测错误算成通过。
 
 复用 `normalize_record → run_review → render_trace`；不重跑客服，不修改会话，不重新检索。程序通过、裁判 pass、实际设备恢复是不同结论。裁判错误/超时、无效评审、unclear 与 not_applicable 保留区别；审计缺失或矛盾输出标记为无效评审，不统计成通过。
+
+两种下载都指向任务列表中的同一个评测任务：
+
+- “下载 Markdown 报告”读取任务目录下已保存的 `report.md`（原有 `GET /admin/api/evaluations/{identifier}/report`）。
+- “下载 JSON 报告”读取任务目录下已保存的 `result.json` 原始内容（`GET /admin/api/evaluations/{identifier}/report.json`），以附件 `evaluation-<identifier>.json` 返回，并带 `Cache-Control: no-store`。它保留中文与嵌套字段，不重新生成、裁剪或重新评分，也不调用聊天、嵌入、裁判或 Ragas，不创建新评测，不修改会话或原报告。
+
+下载沿用管理端鉴权：未登录 401，非管理员 403；任务不存在 404；任务未完成或不是评测任务 409；已完成评测的结果文件不存在或不是普通文件（含符号链接、越界路径）时按 404 处理；文件存在但真实读取失败时明确失败，不返回空对象或现场重算，也不泄露本地路径。标识符必须是 32 位小写十六进制，非法或越界标识符按不存在处理，不会读取服务器上的其他文件。
 
 评测选择是独立私有快照。删除用户会话不会删除已选入评测的快照或报告；用户删除提示已说明这一点。评测和资料任务保存在 `.local/admin/`，向量集合在被忽略的 `data/indexes/`。服务重启将未完成任务标记为 interrupted，不自动重发外部请求；发布是否生效以当前资料版本为准。
 

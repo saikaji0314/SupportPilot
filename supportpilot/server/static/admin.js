@@ -166,6 +166,7 @@ $('jobs').addEventListener('click',async e=>{
   try {
     const data=await get(`/admin/api/evaluations/${button.dataset.report}`), report=data.report;
     $('report-download').href=`/admin/api/evaluations/${button.dataset.report}/report`;
+    $('report-download-json').href=`/admin/api/evaluations/${button.dataset.report}/report.json`;
     $('report-content').replaceChildren(el('p',`评测方式：${report.mode} · 选择轮数：${report.results.length}`),el('p',`人工备注：${report.notes || '无'}`));
     report.results.forEach(item=>{
       const block=el('details',undefined,'trace-turn');block.open=true;block.append(el('summary',item.trace.payload.user_text));

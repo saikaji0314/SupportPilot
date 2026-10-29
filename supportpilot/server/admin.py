@@ -192,3 +192,27 @@ def install_admin(app, *, get_store, root, web, admin_usernames=None,
             raise HTTPException(409, '报告尚未生成。')
         return FileResponse(workspace.folder('jobs', identifier) / 'report.md', media_type='text/plain; charset=utf-8',
                             filename=f'evaluation-{identifier}.md', headers={'Cache-Control':'no-store'})
+
+    @app.get('/admin/api/evaluations/{identifier}/report.json')
+    def download_json(identifier: str, account=Depends(admin_identity)):
+        """回传已保存 result.json 的原始字节，不重新生成、裁剪或评分。"""
+        job = missing(lambda: workspace.job(identifier))
+        if job['kind'] != 'evaluation' or job['status'] != 'completed':
+            raise HTTPException(409, '报告尚未生成。')
+        try:
+            path = workspace.folder('jobs', identifier) / 'result.json'
+            # 符号链接、越界路径或不存在的普通文件都按记录不存在处理。
+            if path.is_symlink() or not path.is_file():
+                raise FileNotFoundError(identifier)
+            resolved = path.resolve()
+            if not resolved.is_relative_to(workspace.directory.resolve()):
+                raise FileNotFoundError(identifier)
+            payload = resolved.read_bytes()
+        except FileNotFoundError:
+            raise HTTPException(404, '记录不存在。') from None
+        except (OSError, ValueError, RuntimeError):
+            # 真实读取失败明确报错，但不回传本地路径或底层异常信息。
+            raise HTTPException(503, '评测结果暂时无法读取。') from None
+        return Response(content=payload, media_type='application/json',
+                        headers={'Content-Disposition': f'attachment; filename="evaluation-{identifier}.json"',
+                                 'Cache-Control': 'no-store'})
